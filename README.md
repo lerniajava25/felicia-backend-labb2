@@ -10,8 +10,10 @@ Thymeleaf. Users report tickets, agents handle them and admins manage users.
 Requirements: Java 26 and Docker.
 
 ```bash
-./mvnw spring-boot:run
+SEED_PASSWORD=yourpassword ./mvnw spring-boot:run
 ```
+
+`SEED_PASSWORD` is required: it is the password for the demo accounts (see Accounts).
 
 Spring Boot's Docker Compose support starts PostgreSQL from `compose.yaml`. The app is
 available at http://localhost:8080.
@@ -24,7 +26,18 @@ Run the tests (Testcontainers starts its own PostgreSQL container):
 
 ## Accounts
 
-To be added.
+When the database is empty, the app creates these demo accounts at startup:
+
+| Username | Role  |
+|----------|-------|
+| admin    | ADMIN |
+| billy    | AGENT |
+| pippi    | USER  |
+| olle     | USER  |
+
+All accounts use the password from the `SEED_PASSWORD` environment variable. It is never
+stored in the project files.
+
 ## Roles
 
 To be added.
