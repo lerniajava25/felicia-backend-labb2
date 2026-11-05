@@ -24,6 +24,16 @@ Run the tests (Testcontainers starts its own PostgreSQL container):
 ./mvnw test
 ```
 
+### Git hooks
+
+A pre-push hook in `.githooks/pre-push` runs the tests before every push, to any branch.
+If Docker is not running or a test fails, the push is cancelled. Turn it on once after
+cloning:
+
+```bash
+git config core.hooksPath .githooks
+```
+
 ## Accounts
 
 When the database is empty, the app creates these demo accounts at startup:
