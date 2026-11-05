@@ -53,27 +53,27 @@ public class DevDataSeeder implements CommandLineRunner {
         String passwordHash = passwordEncoder.encode(environment.getRequiredProperty("app.seed.password"));
 
         User admin = new User("admin", passwordHash, "Admin", Role.ADMIN);
-        User billy = new User("billy", passwordHash, "Billy Bolinder", Role.AGENT);
-        User pippi = new User("pippi", passwordHash, "Pippi Långstrump", Role.USER);
+        User pippi = new User("pippi", passwordHash, "Pippi Långstrump", Role.AGENT);
+        User billy = new User("billy", passwordHash, "Billy Bolinder", Role.USER);
         User olle = new User("olle", passwordHash, "Olle Olsson", Role.USER);
-        List<User> users = userRepository.saveAll(List.of(admin, billy, pippi, olle));
+        List<User> users = userRepository.saveAll(List.of(admin, pippi, billy, olle));
 
-        Ticket printer = new Ticket("Big emergency!!",
+        Ticket emergency = new Ticket("Big emergency!!",
                 "There are no snacks", billy);
-        printer.assignTo(billy);
-        printer.changeStatus(TicketStatus.IN_PROGRESS);
+        emergency.assignTo(pippi);
+        emergency.changeStatus(TicketStatus.IN_PROGRESS);
 
-        Ticket vpn = new Ticket("Cannot sign in to computer",
-                "The computer says my password has expired", pippi);
+        Ticket signIn = new Ticket("Cannot sign in to computer",
+                "The computer says my password has expired", billy);
 
         Ticket screen = new Ticket("Need a second screen",
-                "I would like a second screen for my desk.", pippi);
+                "I would like a second screen for my desk.", olle);
 
-        List<Ticket> tickets = ticketRepository.saveAll(List.of(printer, vpn, screen));
+        List<Ticket> tickets = ticketRepository.saveAll(List.of(emergency, signIn, screen));
 
         commentRepository.saveAll(List.of(
-                new Comment(printer, billy, "I am on it."),
-                new Comment(printer, pippi, "Thanks! Mr. Nilsson is excited.")));
+                new Comment(emergency, billy, "Oh no"),
+                new Comment(emergency, pippi, "Mr. Nilsson is on it")));
 
         log.info("Seeded {} users and {} tickets", users.size(), tickets.size());
     }

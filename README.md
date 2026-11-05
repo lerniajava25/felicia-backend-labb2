@@ -41,8 +41,8 @@ When the database is empty, the app creates these demo accounts at startup:
 | Username | Role  |
 |----------|-------|
 | admin    | ADMIN |
-| billy    | AGENT |
-| pippi    | USER  |
+| pippi    | AGENT |
+| billy    | USER  |
 | olle     | USER  |
 
 All accounts use the password from the `SEED_PASSWORD` environment variable. It is never
