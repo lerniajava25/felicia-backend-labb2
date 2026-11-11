@@ -16,8 +16,10 @@ Requirements: Java 26 and Docker.
    ```
 
    Open `.env` and set `SEED_PASSWORD` to a password of your choice. It is the password
-   for the demo accounts (see Accounts). `.env` is git-ignored and is read by the app at
-   startup (`spring.config.import` in `application.properties`).
+   for the demo accounts (see Accounts). `SEED_ENABLED=true` turns on the demo data;
+   seeding is off by default, so it only happens where `.env` says so. `.env` is
+   git-ignored and is read by the app at startup (`spring.config.import` in
+   `application.properties`).
 
 2. Start the app:
 
@@ -47,7 +49,8 @@ The development database runs in Docker and can be opened in any database tool:
 | User     | `myuser`     |
 | Password | `secret`     |
 
-These are local development values from `compose.yaml`, not real credentials.
+These are local development values from `compose.yaml`, not real credentials. The port is
+bound to `127.0.0.1` only, so the database can't be reached from other computers.
 
 ### Tests
 
@@ -70,7 +73,7 @@ git config core.hooksPath .githooks
 
 ## Accounts
 
-When the database is empty, the app creates these demo accounts at startup:
+When the database is empty and `SEED_ENABLED=true`, the app creates these demo accounts at startup:
 
 | Username | Role  |
 |----------|-------|
