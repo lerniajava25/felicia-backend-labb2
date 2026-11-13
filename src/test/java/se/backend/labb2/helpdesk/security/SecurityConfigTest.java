@@ -8,9 +8,11 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import se.backend.labb2.helpdesk.TestcontainersConfiguration;
+import se.backend.labb2.helpdesk.user.Role;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
@@ -39,9 +41,11 @@ class SecurityConfigTest {
     }
 
     @Test
-    @WithMockUser
     void homeUsesOwnStylesheetAndNoCdn() throws Exception {
-        mockMvc.perform(get("/"))
+        // The nav shows displayName, so the principal must be a CurrentUser (as in the real app).
+        CurrentUser testUser = new CurrentUser(1L, "test", "unused-hash", "Test User", Role.USER, true);
+
+        mockMvc.perform(get("/").with(user(testUser)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("href=\"/css/app.css\"")))
                 .andExpect(content().string(not(containsString("cdn."))));

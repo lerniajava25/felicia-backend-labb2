@@ -1,3 +1,13 @@
-<nav xmlns:th="http://www.thymeleaf.org" class="nav" th:fragment="nav">
+<nav xmlns:th="http://www.thymeleaf.org"
+     xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+     class="nav" th:fragment="nav">
     <a class="nav-brand" th:href="@{/}">Helpdesk</a>
+    <a sec:authorize="hasRole('AGENT')" th:href="@{/agent/tickets}">Agent</a>
+    <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/users}">Admin</a>
+    <span sec:authorize="isAuthenticated()" class="nav-user"
+          th:text="${#authentication.principal.displayName}">Name</span>
+    <!-- Logout is a POST form so it carries the CSRF token. -->
+    <form sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post" class="nav-logout">
+        <button type="submit" class="nav-logout-button">Log out</button>
+    </form>
 </nav>

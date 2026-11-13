@@ -28,7 +28,8 @@ public class SecurityConfig {
                         .requestMatchers("/", "/tickets/**").authenticated()
                         // Deny by default: a new URL is blocked until it gets a rule above.
                         .anyRequest().denyAll())
-                .formLogin(withDefaults())
+                // Our own page. Defaults kept: POST /login, failure /login?error, logout /login?logout.
+                .formLogin(form -> form.loginPage("/login"))
                 .logout(withDefaults());
         // CSRF is on by default and stays on.
         return http.build();

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Login page · Helpdesk')}"></head>
+<body>
+<div th:replace="~{fragments/nav :: nav}"></div>
+
+<main>
+    <div class="card login-card">
+        <h1 class="login-title">Sign in</h1>
+
+        <!-- One generic message: never reveal whether the user exists or is disabled. -->
+        <p th:if="${param.error}" class="msg msg-error" role="alert">Wrong username or password</p>
+        <p th:if="${param.logout}" class="msg msg-info" role="status">You have been logged out</p>
+
+        <!-- th:action adds the hidden CSRF token automatically. -->
+        <form th:action="@{/login}" method="post" class="login-form">
+            <div class="field">
+                <label for="username">Username</label>
+                <input id="username" name="username" type="text"
+                       autocomplete="username" placeholder="Username" required autofocus>
+            </div>
+            <div class="field">
+                <label for="password">Password</label>
+                <input id="password" name="password" type="password"
+                       autocomplete="current-password" placeholder="Password" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+        </form>
+    </div>
+</main>
+</body>
+</html>
