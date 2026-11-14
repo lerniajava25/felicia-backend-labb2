@@ -1,0 +1,282 @@
+/* ==========================================================
+   Helpdesk stylesheet: plain CSS, no framework.
+   ========================================================== */
+
+:root {
+    /* Surfaces: grey page, lighter card, near-white fields */
+    --color-bg: #ffffff;              /* page background */
+    --color-surface: #f6f6f6;         /* cards, tables */
+    --color-field: #fdfdfd;           /* input fields, secondary buttons */
+
+    /* Text */
+    --color-text: #1f2328;            /* body text, text on buttons */
+    --color-muted: #5c6166;           /* small labels ("Username"), table headers */
+    --color-placeholder: #6b6f73;     /* example text inside empty fields */
+
+    /* Palette: teal = primary */
+    --color-primary: #5acfc9;         /* primary buttons */
+    --color-primary-hover: #3fb8b1;   /* a bit darker when hovering */
+    --color-primary-active: #2fa49d;  /* darker still while pressed */
+    --color-link: #17635f;            /* dark teal: light teal is unreadable as text */
+    --color-link-hover: #0f4744;
+    --color-focus: #17635f;           /* keyboard focus outline, >= 3:1 */
+
+    /* Nav bar */
+    --color-nav-bg: #000000;
+    --color-nav-text: #ffffff;        /* 21:1 on black; also the focus outline inside the nav */
+
+    /* Messages: coloured text straight on the page */
+    --color-error: #9b2c1f;           /* about 6.6:1 on the grey page */
+    --color-info: #2b5e20;            /* about 6.5:1 on the grey page */
+
+    /* Lines */
+    --color-border: #d6d6d6;          /* decorative lines (table rows) */
+    --color-field-border: #858585;    /* field edge, >= 3:1; "transparent" = borderless */
+
+    /* Font */
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --line-height: 1.5;
+
+    /* Spacing scale and shape */
+    /* 8px grid: every space and shape is a multiple of 8px (1rem = 16px) */
+    --space-2: 0.5rem;                /* 8px */
+    --space-3: 1rem;                  /* 16px */
+    --space-4: 2rem;                  /* 32px */
+    --space-5: 3rem;                  /* 48px */
+    --radius: 16px;                   /* cards, textarea, table */
+    /* Soft shadow that lifts a box off the page: a tight one all around + a wide one below */
+    --shadow: 0 0 8px rgb(0 0 0 / 0.06), 0 8px 32px rgb(0 0 0 / 0.12);
+    --radius-pill: 999px;             /* "fully round": renders as half the height, 24px on a 48px control */
+    --max-width: 60rem;               /* width of the main column */
+}
+
+/* ---------- Reset ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+img, svg { max-width: 100%; height: auto; }
+
+/* ---------- Base ---------- */
+body {
+    margin: 0;
+    font-family: var(--font);
+    line-height: var(--line-height);
+    color: var(--color-text);
+    background: var(--color-bg);
+    overflow-wrap: break-word;        /* long words never push the page wider than the screen */
+}
+
+h1, h2, h3 { line-height: 1.2; margin: 0 0 var(--space-3); }
+h1 { font-size: 2rem; font-weight: 600; }
+h2 { font-size: 1.375rem; font-weight: 600; }
+h3 { font-size: 1.125rem; }
+p { margin: 0 0 var(--space-3); }
+
+/* Smaller heading under the main one, e.g. "Sign in" under "Helpdesk" */
+.subtitle {
+    font-size: 1.125rem;
+    font-weight: 400;
+    color: var(--color-muted);
+    margin-bottom: var(--space-4);
+}
+
+a { color: var(--color-link); }
+a:hover { color: var(--color-link-hover); }
+
+/* Visible keyboard focus on everything that can be focused */
+:focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+}
+
+/* ---------- Main column ---------- */
+main {
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding: var(--space-4) var(--space-3);
+}
+
+/* ---------- Nav bar ---------- */
+.nav {
+    display: flex;
+    flex-wrap: wrap;                  /* items wrap on narrow phones */
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background: var(--color-nav-bg);
+    color: var(--color-nav-text);
+}
+.nav a { color: var(--color-nav-text); text-decoration: none; }
+.nav a:hover { text-decoration: underline; color: var(--color-nav-text); }
+/* The dark-teal focus outline is under 3:1 on black, so use white inside the nav */
+.nav :focus-visible { outline-color: var(--color-nav-text); }
+.nav-brand { font-weight: 700; font-size: 1.25rem; margin-right: auto; }
+
+/* ---------- Buttons ---------- */
+.btn {
+    display: inline-flex;
+    align-items: center;              /* text centred in the 48px height */
+    justify-content: center;
+    min-height: 3.5rem;                 /* slightly bigger than fields */
+    padding: var(--space-2) var(--space-4);
+    font: inherit;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    color: var(--color-text);
+    border: 1px solid transparent;
+    border-radius: var(--radius-pill);
+    cursor: pointer;
+}
+.btn-primary { background: var(--color-primary); }
+.btn-primary:hover { background: var(--color-primary-hover); color: var(--color-text); }
+.btn-primary:active { background: var(--color-primary-active); }
+.btn-secondary { background: var(--color-field); border-color: var(--color-field-border); }
+.btn-secondary:hover { background: var(--color-surface); color: var(--color-text); }
+.btn-block { display: flex; width: 100%; }
+
+/* ---------- Forms ---------- */
+.field { margin-bottom: var(--space-3); }
+label {
+    display: block;
+    font-size: 0.95rem;
+    color: var(--color-muted);
+    margin: 0 0 var(--space-2);       /* lines up with the left edge of the field */
+}
+input, select, textarea {
+    width: 100%;
+    max-width: 100%;
+    min-height: 3rem;                 /* 48px: roomy, and an easy touch target */
+    padding: var(--space-2) var(--space-3);
+    font: inherit;
+    color: var(--color-text);
+    background: var(--color-field);   /* white pill on the grey page */
+    /* No visible edge (your choice: below WCAG 3:1 for field edges, accepted).
+       Transparent instead of 0 so high-contrast mode can still draw an edge. */
+    border: 1px solid transparent;
+    border-radius: var(--radius-pill);
+}
+::placeholder { color: var(--color-placeholder); opacity: 1; }
+textarea { min-height: 6rem; resize: vertical; border-radius: var(--radius); }
+.field-error { color: var(--color-error); font-size: 0.9rem; margin: var(--space-2) 0 0; }
+
+/* ---------- Messages ---------- */
+/* Plain coloured text, no box; lines up with the fields */
+.msg {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-2) 0;
+    margin-bottom: var(--space-3);
+}
+/* Icon before the text. The SVG is only a stencil (mask); the colour comes from
+   currentColor, so it always matches the text. content: "" = screen readers skip it,
+   the text already says what kind of message it is. */
+.msg::before {
+    content: "";
+    flex: none;
+    width: 1.5rem;                    /* 24px = one line of text (16px x 1.5 line-height) */
+    height: 1.5rem;
+    background-color: currentColor;
+    mask: var(--msg-icon) center / contain no-repeat;
+}
+.msg-error {
+    color: var(--color-error);
+    /* Filled warning triangle with the "!" cut out */
+    --msg-icon: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill-rule='evenodd' d='M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z M11 9h2v5h-2z M11 16h2v2h-2z'/></svg>");
+}
+.msg-info {
+    color: var(--color-info);
+    /* Filled circle with the "i" cut out */
+    --msg-icon: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill-rule='evenodd' d='M2 12a10 10 0 1 0 20 0a10 10 0 1 0-20 0z M11 10h2v7h-2z M11 6.5h2v2h-2z'/></svg>");
+}
+
+/* ---------- Table ---------- */
+.table-wrap { overflow-x: auto; border-radius: var(--radius); }  /* scrolls inside, not the page */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--color-surface);
+}
+th, td {
+    padding: var(--space-2) var(--space-3);
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+}
+th { color: var(--color-muted); font-size: 0.9rem; font-weight: 600; }
+
+/* ---------- Card ---------- */
+.card {
+    max-width: 26rem;
+    margin: var(--space-4) auto;
+    padding: var(--space-4) var(--space-3);
+    background: var(--color-surface);
+    border-radius: var(--radius);
+}
+.card > h1, .card > .subtitle { text-align: center; }
+
+/* ---------- Login page ---------- */
+/* :has() = "a body that contains a login card", so this layout only applies to the login page */
+body:has(.login-card) {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;               /* full screen height, also on phones */
+}
+body:has(.login-card) main {
+    flex: 1;                          /* main fills the space below the nav */
+    display: grid;
+    place-items: center;              /* card sits in the middle */
+    width: 100%;
+    /* Extra space at the bottom lifts the card: (128px - 32px top) / 2 = 48px above true centre.
+       Slightly above centre looks more balanced to the eye than exact centre. */
+    padding-bottom: 8rem;
+}
+.login-card {
+    width: 100%;
+    margin: 0;                        /* the grid centres it now */
+    max-width: 432px;                 /* fields stay 336px + 2 x 48px padding (54 x 8px) */
+    padding: var(--space-5);
+    background: var(--color-field);   /* white card on the grey page */
+    border-radius: var(--radius);     /* 16px */
+    box-shadow: var(--shadow);        /* lifts the card so it stands out from the page */
+}
+/* Inside the white card the fields swap colours: grey fill, like Apple's forms */
+.login-card input { background: var(--color-bg); }
+/* The normal placeholder grey is only about 4.3:1 on this fill (below AA),
+   so use the slightly darker muted grey: about 5.3:1 */
+.login-card input::placeholder { color: var(--color-muted); }
+.login-title {
+    margin-bottom: var(--space-2);
+    font-size: 2.25rem;
+    font-weight: 500;                 /* calm, not bold */
+    letter-spacing: -0.01em;
+    /* Lift only the heading 16px. A relative offset moves it visually without changing the
+       box's height, so the fields and button stay exactly where they are. */
+    position: relative;
+    top: calc(-1 * var(--space-3));
+}
+.login-form .btn { margin-top: var(--space-4); }  /* 32px gap between the password field and the button */
+.nav-user {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);              /* 8px between icon and name */
+    color: var(--color-nav-text);
+}
+/* Person icon before the name: same stencil (mask) technique as the message icons,
+   coloured with currentColor. Decorative, so screen readers skip it. */
+.nav-user::before {
+    content: "";
+    flex: none;
+    width: 1.5rem;                    /* 24px */
+    height: 1.5rem;
+    background-color: currentColor;
+    mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='8' r='4'/><path d='M4 20a8 8 0 0 1 16 0z'/></svg>") center / contain no-repeat;
+}
+.nav-logout { margin: 0 0 0 var(--space-3); }  /* 16px extra + the nav's 16px gap = 32px after the name */
+.nav-logout-button {
+    font: inherit;
+    color: var(--color-nav-text);
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: underline;
+}

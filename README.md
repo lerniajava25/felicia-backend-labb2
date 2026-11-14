@@ -82,9 +82,20 @@ When the database is empty and `SEED_ENABLED=true`, the app creates these demo a
 | billy    | USER  |
 | olle     | USER  |
 
-All accounts use the `SEED_PASSWORD` from your `.env` file. The password itself is never
-stored in the repository, and the database only holds bcrypt hashes of it.
+Sign in at http://localhost:8080/login with a username from the table and the
+`SEED_PASSWORD` from your own `.env` file. Usernames are not case-sensitive. Log out with
+the "Log out" button in the nav bar.
+
+The password itself is never stored in the repository, and the database only holds
+bcrypt hashes of it.
 
 ## Roles
 
-To be added.
+| Role  | May do                                                                                    |
+|-------|-------------------------------------------------------------------------------------------|
+| USER  | Create tickets, see their own tickets and their details, comment on their own tickets     |
+| AGENT | See all tickets and their details, assign a ticket to themselves, change status, comment  |
+| ADMIN | Everything an agent can do, plus create users, change roles and enable/disable users      |
+
+URL access is enforced in `SecurityConfig` (anything not listed is denied), with the role
+hierarchy ADMIN > AGENT > USER.
