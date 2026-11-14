@@ -122,10 +122,20 @@ class LoginTest {
     }
 
     @Test
-    void navForAdminHasAdminAndAgentLinks() throws Exception {
+    void navForAgentHasOnlyAgentLink() throws Exception {
+        CurrentUser agent = new CurrentUser(99L, "agent", "unused-hash", "Agent Test", Role.AGENT, true);
+
+        mockMvc.perform(get("/").with(user(agent)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("href=\"/agent/tickets\"")))
+                .andExpect(content().string(not(containsString("href=\"/admin/users\""))));
+    }
+
+    @Test
+    void navForAdminHasOnlyAdminLink() throws Exception {
         mockMvc.perform(get("/").with(user(CurrentUser.from(admin))))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("href=\"/admin/users\"")))
-                .andExpect(content().string(containsString("href=\"/agent/tickets\"")));
+                .andExpect(content().string(not(containsString("href=\"/agent/tickets\""))));
     }
 }

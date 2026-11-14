@@ -2,10 +2,18 @@
      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
      class="nav" th:fragment="nav">
     <a class="nav-brand" th:href="@{/}">Helpdesk</a>
-    <a sec:authorize="hasRole('AGENT')" th:href="@{/agent/tickets}">Agent</a>
-    <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/users}">Admin</a>
-    <span sec:authorize="isAuthenticated()" class="nav-user"
-          th:text="${#authentication.principal.displayName}">Name</span>
+    <!-- Name and role share one element, so only a normal space separates them
+         (the nav's flex gap applies between nav items, not inside one). -->
+    <span sec:authorize="isAuthenticated()" class="nav-user">
+        <span class="nav-user-text">
+            <span th:text="${#authentication.principal.displayName}">Name</span>
+            <!-- Only the highest role is shown (the hierarchy gives an admin AGENT and USER too).
+                 Admins can still open /agent/** pages; this only affects the nav. -->
+            <span sec:authorize="hasRole('ADMIN')" class="nav-role">(<a th:href="@{/admin/users}">admin</a>)</span>
+            <span sec:authorize="hasRole('AGENT') and !hasRole('ADMIN')" class="nav-role">(<a th:href="@{/agent/tickets}">agent</a>)</span>
+            <span sec:authorize="hasRole('USER') and !hasRole('AGENT')" class="nav-role">(user)</span>
+        </span>
+    </span>
     <!-- Logout is a POST form so it carries the CSRF token. -->
     <form sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post" class="nav-logout">
         <button type="submit" class="nav-logout-button">Log out</button>
