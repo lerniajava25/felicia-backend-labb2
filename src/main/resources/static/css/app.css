@@ -157,6 +157,9 @@ input, select, textarea {
 ::placeholder { color: var(--color-placeholder); opacity: 1; }
 textarea { min-height: 6rem; resize: vertical; border-radius: var(--radius); }
 .field-error { color: var(--color-error); font-size: 0.9rem; margin: var(--space-2) 0 0; }
+/* Wider card for forms with a description; the grey card makes the borderless fields visible */
+.form-card { max-width: 40rem; }
+.form-actions { display: flex; gap: var(--space-2); }   /* buttons side by side, 8px apart */
 
 /* ---------- Messages ---------- */
 /* Plain coloured text, no box; lines up with the fields */

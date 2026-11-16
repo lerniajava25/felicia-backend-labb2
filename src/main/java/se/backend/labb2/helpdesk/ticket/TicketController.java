@@ -1,10 +1,14 @@
 package se.backend.labb2.helpdesk.ticket;
 
+import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import se.backend.labb2.helpdesk.security.CurrentUser;
 
 @Controller
@@ -20,6 +24,25 @@ public class TicketController {
     public String list(@AuthenticationPrincipal CurrentUser current, Model model) {
         model.addAttribute("board", ticketService.boardFor(current));
         return "tickets/list";
+    }
+
+    // The fixed path "/tickets/new" wins over "/tickets/{id}", so "new" is never read as an id.
+    @GetMapping("/tickets/new")
+    public String newForm(Model model) {
+        model.addAttribute("form", new NewTicketForm());
+        return "tickets/new";
+    }
+
+    @PostMapping("/tickets")
+    public String create(@Valid @ModelAttribute("form") NewTicketForm form,
+                         BindingResult result,
+                         @AuthenticationPrincipal CurrentUser current) {
+        if (result.hasErrors()) {
+            // Same page again: the form (with the typed text) and the errors are still in the model.
+            return "tickets/new";
+        }
+        Long id = ticketService.create(form, current);
+        return "redirect:/tickets/" + id;
     }
 
     @GetMapping("/tickets/{id}")

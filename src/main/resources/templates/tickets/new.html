@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('New ticket · Helpdesk')}"></head>
+<body>
+<div th:replace="~{fragments/nav :: nav}"></div>
+
+<main>
+    <h1>New ticket</h1>
+
+    <!-- th:action adds the hidden CSRF token. th:object binds the fields to NewTicketForm. -->
+    <form th:action="@{/tickets}" th:object="${form}" method="post" class="card form-card">
+        <div class="field">
+            <label for="title">Title</label>
+            <!-- th:field sets id, name and the typed value. maxlength is only a convenience;
+                 the server checks the length too. -->
+            <input type="text" th:field="*{title}" maxlength="120" required
+                   th:aria-invalid="${#fields.hasErrors('title')} ? 'true'"
+                   th:aria-describedby="${#fields.hasErrors('title')} ? 'title-error'">
+            <p id="title-error" class="field-error"
+               th:if="${#fields.hasErrors('title')}" th:errors="*{title}">Error</p>
+        </div>
+        <div class="field">
+            <label for="description">Description</label>
+            <!-- No maxlength: browsers count a line break as 1 character but send 2 (\r\n). -->
+            <textarea th:field="*{description}" rows="8" required
+                      th:aria-invalid="${#fields.hasErrors('description')} ? 'true'"
+                      th:aria-describedby="${#fields.hasErrors('description')} ? 'description-error'"></textarea>
+            <p id="description-error" class="field-error"
+               th:if="${#fields.hasErrors('description')}" th:errors="*{description}">Error</p>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Create ticket</button>
+            <a th:href="@{/tickets}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

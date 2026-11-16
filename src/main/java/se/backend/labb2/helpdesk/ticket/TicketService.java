@@ -5,6 +5,8 @@ import org.springframework.transaction.annotation.Transactional;
 import se.backend.labb2.helpdesk.common.NotFoundException;
 import se.backend.labb2.helpdesk.security.CurrentUser;
 import se.backend.labb2.helpdesk.user.Role;
+import se.backend.labb2.helpdesk.user.User;
+import se.backend.labb2.helpdesk.user.UserRepository;
 
 import java.util.Arrays;
 import java.util.List;
@@ -17,10 +19,26 @@ public class TicketService {
 
     private final TicketRepository ticketRepository;
     private final CommentRepository commentRepository;
+    private final UserRepository userRepository;
 
-    public TicketService(TicketRepository ticketRepository, CommentRepository commentRepository) {
+    public TicketService(TicketRepository ticketRepository,
+                         CommentRepository commentRepository,
+                         UserRepository userRepository) {
         this.ticketRepository = ticketRepository;
         this.commentRepository = commentRepository;
+        this.userRepository = userRepository;
+    }
+
+    /**
+     * Creates a ticket owned by the logged-in user and returns its id.
+     * The owner comes from the login, never from the form; status starts as NEW, no assignee.
+     */
+    @Transactional
+    public Long create(NewTicketForm form, CurrentUser current) {
+        // A reference is enough for the foreign key: no SELECT for the user.
+        User creator = userRepository.getReferenceById(current.id());
+        Ticket ticket = new Ticket(form.getTitle().trim(), form.getDescription(), creator);
+        return ticketRepository.save(ticket).getId();
     }
 
     /**
