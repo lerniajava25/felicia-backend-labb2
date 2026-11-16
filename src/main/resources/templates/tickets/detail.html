@@ -1,11 +1,15 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/layout :: head(|${ticket.title} · Helpdesk|)}"></head>
 <body>
 <div th:replace="~{fragments/nav :: nav}"></div>
 
 <main>
-    <p><a th:href="@{/tickets}">← My tickets</a></p>
+    <p>
+        <a th:href="@{/tickets}">← My tickets</a>
+        <a sec:authorize="hasRole('AGENT')" th:href="@{/agent/tickets}">← All tickets</a>
+    </p>
 
     <article class="ticket">
         <h1 th:text="${ticket.title}">Title</h1>

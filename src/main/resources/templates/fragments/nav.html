@@ -4,6 +4,8 @@
     <a class="nav-brand" th:href="@{/}">Helpdesk</a>
     <a sec:authorize="isAuthenticated()" th:href="@{/tickets}">My tickets</a>
     <a sec:authorize="isAuthenticated()" th:href="@{/tickets/new}">New ticket</a>
+    <!-- Admins see it too: the role hierarchy gives ADMIN the AGENT role. -->
+    <a sec:authorize="hasRole('AGENT')" th:href="@{/agent/tickets}">All tickets</a>
     <!-- Name and role share one element, so only a normal space separates them
          (the nav's flex gap applies between nav items, not inside one). -->
     <span sec:authorize="isAuthenticated()" class="nav-user">

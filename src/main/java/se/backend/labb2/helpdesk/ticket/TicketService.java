@@ -1,5 +1,6 @@
 package se.backend.labb2.helpdesk.ticket;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import se.backend.labb2.helpdesk.common.NotFoundException;
@@ -39,6 +40,35 @@ public class TicketService {
         User creator = userRepository.getReferenceById(current.id());
         Ticket ticket = new Ticket(form.getTitle().trim(), form.getDescription(), creator);
         return ticketRepository.save(ticket).getId();
+    }
+
+    /**
+     * Every ticket, newest change first, for agents (and admins, through the role hierarchy).
+     * The URL rule already guards /agent/**; this protects the method itself too.
+     */
+    @PreAuthorize("hasRole('AGENT')")
+    public List<AgentTicketRow> listAll() {
+        // The repository's entity graph loads createdBy and assignee in the same query.
+        return ticketRepository.findAllByOrderByLastModifiedDesc().stream()
+                .map(AgentTicketRow::from)
+                .toList();
+    }
+
+    /**
+     * Every ticket as a board for agents: one column per status, in TicketStatus order,
+     * empty columns included. Each column is newest change first. Same idea as boardFor.
+     */
+    @PreAuthorize("hasRole('AGENT')")
+    public AgentBoard boardOfAll() {
+        List<AgentTicketRow> rows = listAll();
+        // groupingBy keeps the list's order inside each group, so newest first survives.
+        Map<TicketStatus, List<AgentTicketRow>> byStatus = rows.stream()
+                .collect(Collectors.groupingBy(AgentTicketRow::status));
+
+        List<AgentBoardColumn> columns = Arrays.stream(TicketStatus.values())
+                .map(status -> new AgentBoardColumn(status, status.label(), byStatus.getOrDefault(status, List.of())))
+                .toList();
+        return new AgentBoard(columns, rows.isEmpty());
     }
 
     /**

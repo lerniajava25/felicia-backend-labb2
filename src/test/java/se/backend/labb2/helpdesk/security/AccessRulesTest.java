@@ -12,12 +12,12 @@ import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import se.backend.labb2.helpdesk.TestcontainersConfiguration;
+import se.backend.labb2.helpdesk.user.Role;
 
 import java.net.URI;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -69,9 +69,12 @@ class AccessRulesTest {
 
     @Test
     void adminInheritsAgentAccess() throws Exception {
-        // No controller exists yet, so 404 is fine. What matters is that it isn't 403.
-        mockMvc.perform(get("/agent/tickets").with(user("a").roles("ADMIN")))
-                .andExpect(status().is(not(403)));
+        // The page now renders the nav, which shows displayName, so the principal must be
+        // a CurrentUser (as in the real app). Id 99 isn't in the database: the list is just empty.
+        CurrentUser admin = new CurrentUser(99L, "admin", "unused-hash", "Admin Test", Role.ADMIN, true);
+
+        mockMvc.perform(get("/agent/tickets").with(user(admin)))
+                .andExpect(status().isOk());
     }
 
     @Test
