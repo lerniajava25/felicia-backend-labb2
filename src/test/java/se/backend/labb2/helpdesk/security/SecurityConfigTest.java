@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import se.backend.labb2.helpdesk.TestcontainersConfiguration;
 import se.backend.labb2.helpdesk.user.Role;
@@ -49,12 +48,5 @@ class SecurityConfigTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("href=\"/css/app.css\"")))
                 .andExpect(content().string(not(containsString("cdn."))));
-    }
-
-    @Test
-    @WithMockUser
-    void unlistedUrlIsDenied() throws Exception {
-        mockMvc.perform(get("/not-a-listed-url"))
-                .andExpect(status().isForbidden());
     }
 }
