@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('My tickets · Helpdesk')}"></head>
+<body>
+<div th:replace="~{fragments/nav :: nav}"></div>
+
+<main>
+    <h1>My tickets</h1>
+
+    <p th:if="${tickets.isEmpty()}" class="msg msg-info" role="status">You have no tickets yet.</p>
+
+    <section th:unless="${tickets.isEmpty()}" class="ticket-list">
+        <div class="table-wrap">
+            <table class="ticket-table">
+                <thead>
+                <tr>
+                    <th scope="col">Title</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Last changed</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row : ${tickets}">
+                    <td class="ticket-title">
+                        <a th:href="@{/tickets/{id}(id=${row.id})}" th:text="${row.title}">Title</a>
+                    </td>
+                    <!-- IN_PROGRESS becomes "status status-in-progress" -->
+                    <td th:with="slug=${row.status.name().toLowerCase().replace('_', '-')}"
+                        th:class="${'status status-' + slug}"
+                        th:text="${row.status}">NEW</td>
+                    <td th:text="${row.lastModified}">2026-01-01 12:00</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>
