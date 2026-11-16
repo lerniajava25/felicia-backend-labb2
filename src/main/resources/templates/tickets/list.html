@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('My tickets · Helpdesk')}"></head>
+<body>
+<div th:replace="~{fragments/nav :: nav}"></div>
+
+<main>
+    <h1>My tickets</h1>
+
+    <p th:if="${board.empty}" class="msg msg-info" role="status">You have no tickets yet.</p>
+
+    <!-- Read-only board: one column per status. There is nothing here to move a ticket with. -->
+    <div th:unless="${board.empty}" class="board">
+        <!-- IN_PROGRESS becomes "board-column status-in-progress" -->
+        <section th:each="column : ${board.columns}"
+                 th:with="slug=${column.status.name().toLowerCase().replace('_', '-')}"
+                 th:class="${'board-column status-' + slug}">
+            <h2 class="board-column-title">
+                <span th:text="${column.label}">New</span>
+                <span class="board-count" th:text="${column.tickets.size()}">0</span>
+            </h2>
+            <p th:if="${column.tickets.isEmpty()}" class="board-empty">No tickets</p>
+            <ul th:unless="${column.tickets.isEmpty()}" class="board-cards">
+                <li th:each="row : ${column.tickets}" class="ticket-card">
+                    <a class="ticket-title" th:href="@{/tickets/{id}(id=${row.id})}" th:text="${row.title}">Title</a>
+                    <span class="ticket-time" th:text="${row.lastModified}">2026-01-01 12:00</span>
+                </li>
+            </ul>
+        </section>
+    </div>
+</main>
+</body>
+</html>

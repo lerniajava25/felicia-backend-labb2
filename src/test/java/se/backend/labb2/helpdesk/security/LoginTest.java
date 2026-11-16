@@ -113,29 +113,34 @@ class LoginTest {
     }
 
     @Test
-    void navForUserHasNoAgentOrAdminLinks() throws Exception {
+    void navForUserShowsUserRoleAndMyTickets() throws Exception {
         mockMvc.perform(get("/").with(user(CurrentUser.from(billy))))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Billy Test")))
-                .andExpect(content().string(not(containsString("href=\"/admin/users\""))))
-                .andExpect(content().string(not(containsString("href=\"/agent/tickets\""))));
+                .andExpect(content().string(allOf(
+                        containsString("Billy Test"),
+                        containsString("(user)"),
+                        containsString("href=\"/tickets\""))))
+                .andExpect(content().string(not(containsString("(agent)"))))
+                .andExpect(content().string(not(containsString("(admin)"))));
     }
 
     @Test
-    void navForAgentHasOnlyAgentLink() throws Exception {
+    void navForAgentShowsOnlyAgentRole() throws Exception {
         CurrentUser agent = new CurrentUser(99L, "agent", "unused-hash", "Agent Test", Role.AGENT, true);
 
         mockMvc.perform(get("/").with(user(agent)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("href=\"/agent/tickets\"")))
-                .andExpect(content().string(not(containsString("href=\"/admin/users\""))));
+                .andExpect(content().string(containsString("(agent)")))
+                .andExpect(content().string(not(containsString("(admin)"))))
+                .andExpect(content().string(not(containsString("(user)"))));
     }
 
     @Test
-    void navForAdminHasOnlyAdminLink() throws Exception {
+    void navForAdminShowsOnlyAdminRole() throws Exception {
         mockMvc.perform(get("/").with(user(CurrentUser.from(admin))))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("href=\"/admin/users\"")))
-                .andExpect(content().string(not(containsString("href=\"/agent/tickets\""))));
+                .andExpect(content().string(containsString("(admin)")))
+                .andExpect(content().string(not(containsString("(agent)"))))
+                .andExpect(content().string(not(containsString("(user)"))));
     }
 }

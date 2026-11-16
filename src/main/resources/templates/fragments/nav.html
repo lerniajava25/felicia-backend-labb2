@@ -2,15 +2,17 @@
      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
      class="nav" th:fragment="nav">
     <a class="nav-brand" th:href="@{/}">Helpdesk</a>
+    <a sec:authorize="isAuthenticated()" th:href="@{/tickets}">My tickets</a>
+    <a sec:authorize="isAuthenticated()" th:href="@{/tickets/new}">New ticket</a>
     <!-- Name and role share one element, so only a normal space separates them
          (the nav's flex gap applies between nav items, not inside one). -->
     <span sec:authorize="isAuthenticated()" class="nav-user">
         <span class="nav-user-text">
             <span th:text="${#authentication.principal.displayName}">Name</span>
             <!-- Only the highest role is shown (the hierarchy gives an admin AGENT and USER too).
-                 Admins can still open /agent/** pages; this only affects the nav. -->
-            <span sec:authorize="hasRole('ADMIN')" class="nav-role">(<a th:href="@{/admin/users}">admin</a>)</span>
-            <span sec:authorize="hasRole('AGENT') and !hasRole('ADMIN')" class="nav-role">(<a th:href="@{/agent/tickets}">agent</a>)</span>
+                 Plain text: the role is information, not a link. -->
+            <span sec:authorize="hasRole('ADMIN')" class="nav-role">(admin)</span>
+            <span sec:authorize="hasRole('AGENT') and !hasRole('ADMIN')" class="nav-role">(agent)</span>
             <span sec:authorize="hasRole('USER') and !hasRole('AGENT')" class="nav-role">(user)</span>
         </span>
     </span>

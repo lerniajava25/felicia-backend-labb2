@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(|${ticket.title} · Helpdesk|)}"></head>
+<body>
+<div th:replace="~{fragments/nav :: nav}"></div>
+
+<main>
+    <p><a th:href="@{/tickets}">← My tickets</a></p>
+
+    <article class="ticket">
+        <h1 th:text="${ticket.title}">Title</h1>
+
+        <dl class="ticket-meta">
+            <dt>Status</dt>
+            <!-- IN_PROGRESS becomes "status status-in-progress", same as the list -->
+            <dd th:with="slug=${ticket.status.name().toLowerCase().replace('_', '-')}"
+                th:class="${'status status-' + slug}"
+                th:text="${ticket.status}">NEW</dd>
+            <dt>Created by</dt>
+            <dd th:text="${ticket.createdBy}">Name</dd>
+            <dt>Assigned to</dt>
+            <dd th:if="${ticket.assignee != null}" th:text="${ticket.assignee}">Name</dd>
+            <dd th:unless="${ticket.assignee != null}" class="ticket-unassigned">Not assigned</dd>
+            <dt>Created</dt>
+            <dd th:text="${ticket.created}">2026-01-01 12:00</dd>
+            <dt>Last changed</dt>
+            <dd th:text="${ticket.lastModified}">2026-01-01 12:00</dd>
+        </dl>
+
+        <!-- white-space: pre-line in app.css keeps the user's line breaks -->
+        <p class="ticket-description" th:text="${ticket.description}">Description</p>
+    </article>
+
+    <section class="ticket-comments">
+        <h2>Comments</h2>
+        <p th:if="${ticket.comments.isEmpty()}">No comments yet.</p>
+        <ol th:unless="${ticket.comments.isEmpty()}" class="comment-list">
+            <li th:each="comment : ${ticket.comments}" class="comment">
+                <p class="comment-header">
+                    <strong th:text="${comment.author}">Name</strong>
+                    <span class="comment-time" th:text="${comment.created}">2026-01-01 12:00</span>
+                </p>
+                <p class="comment-body" th:text="${comment.body}">Comment</p>
+            </li>
+        </ol>
+
+        <!-- th:action adds the hidden CSRF token. No maxlength: browsers count a line
+             break as 1 character but send 2 (\r\n); the server checks the length. -->
+        <form th:action="@{/tickets/{id}/comments(id=${ticket.id})}" th:object="${commentForm}"
+              method="post" class="card form-card comment-form">
+            <div class="field">
+                <label for="body">Add a comment</label>
+                <textarea th:field="*{body}" rows="4" required
+                          th:aria-invalid="${#fields.hasErrors('body')} ? 'true'"
+                          th:aria-describedby="${#fields.hasErrors('body')} ? 'body-error'"></textarea>
+                <p id="body-error" class="field-error"
+                   th:if="${#fields.hasErrors('body')}" th:errors="*{body}">Error</p>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Add comment</button>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>
