@@ -11,6 +11,10 @@
         <a sec:authorize="hasRole('AGENT')" th:href="@{/agent/tickets}">← All tickets</a>
     </p>
 
+    <!-- Flash messages: set before a redirect, shown once, then gone. -->
+    <p th:if="${message}" class="msg msg-info" role="status" th:text="${message}">Done</p>
+    <p th:if="${error}" class="msg msg-error" role="alert" th:text="${error}">Error</p>
+
     <article class="ticket">
         <h1 th:text="${ticket.title}">Title</h1>
 
@@ -30,6 +34,16 @@
             <dt>Last changed</dt>
             <dd th:text="${ticket.lastModified}">2026-01-01 12:00</dd>
         </dl>
+
+        <!-- Only hides the button. The /agent/** URL rule and @PreAuthorize do the real check.
+             The version lets the server notice if someone changed the ticket meanwhile. -->
+        <th:block sec:authorize="hasRole('AGENT')">
+            <form th:unless="${ticket.status.name() == 'CLOSED'}"
+                  th:action="@{/agent/tickets/{id}/assign(id=${ticket.id})}" method="post" class="assign-form">
+                <input type="hidden" name="version" th:value="${ticket.version}">
+                <button type="submit" class="btn btn-secondary">Assign to me</button>
+            </form>
+        </th:block>
 
         <!-- white-space: pre-line in app.css keeps the user's line breaks -->
         <p class="ticket-description" th:text="${ticket.description}">Description</p>

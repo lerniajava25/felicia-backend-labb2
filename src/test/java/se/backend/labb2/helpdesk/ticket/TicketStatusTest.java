@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import se.backend.labb2.helpdesk.common.RuleViolationException;
 import se.backend.labb2.helpdesk.user.Role;
 import se.backend.labb2.helpdesk.user.User;
 
@@ -61,7 +62,8 @@ class TicketStatusTest {
         ticket.changeStatus(CLOSED);
 
         assertThatThrownBy(() -> ticket.changeStatus(NEW))
-                .isInstanceOf(IllegalStateException.class);
+                .isInstanceOf(RuleViolationException.class)
+                .hasMessage("A ticket cannot move from Closed to New.");
         assertThat(ticket.getStatus()).isEqualTo(CLOSED);
     }
 }

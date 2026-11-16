@@ -8,9 +8,11 @@ import java.util.List;
  * Everything the details page shows about one ticket. Built inside the service
  * transaction, where the lazy createdBy, assignee and comment authors can still be read.
  *
+ * @param version  sent back by forms that change the ticket, to detect someone else's change
  * @param assignee the assignee's display name, or null when nobody is assigned
  */
 public record TicketDetails(Long id,
+                            Long version,
                             String title,
                             String description,
                             TicketStatus status,
@@ -23,6 +25,7 @@ public record TicketDetails(Long id,
     public static TicketDetails from(Ticket ticket, List<Comment> comments) {
         return new TicketDetails(
                 ticket.getId(),
+                ticket.getVersion(),
                 ticket.getTitle(),
                 ticket.getDescription(),
                 ticket.getStatus(),

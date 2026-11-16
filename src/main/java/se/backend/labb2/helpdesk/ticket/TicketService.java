@@ -1,9 +1,11 @@
 package se.backend.labb2.helpdesk.ticket;
 
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import se.backend.labb2.helpdesk.common.NotFoundException;
+import se.backend.labb2.helpdesk.common.RuleViolationException;
 import se.backend.labb2.helpdesk.security.CurrentUser;
 import se.backend.labb2.helpdesk.user.Role;
 import se.backend.labb2.helpdesk.user.User;
@@ -98,6 +100,30 @@ public class TicketService {
         Ticket ticket = loadVisible(ticketId, current);
         User author = userRepository.getReferenceById(current.id());   // from the login, never the form
         commentRepository.save(new Comment(ticket, author, form.getBody()));
+    }
+
+    /**
+     * The logged-in agent takes the ticket. A NEW ticket moves to IN_PROGRESS; other
+     * statuses stay. Refuses a version that isn't the current one, and CLOSED tickets.
+     */
+    @Transactional
+    @PreAuthorize("hasRole('AGENT')")
+    public void assignToMe(Long id, Long version, CurrentUser current) {
+        Ticket ticket = loadVisible(id, current);
+        // Someone changed the ticket after the page was loaded: change nothing.
+        if (!ticket.getVersion().equals(version)) {
+            throw new ObjectOptimisticLockingFailureException(Ticket.class, id);
+        }
+        if (ticket.getStatus() == TicketStatus.CLOSED) {
+            throw new RuleViolationException("A closed ticket cannot be assigned.");
+        }
+        ticket.assignTo(userRepository.getReferenceById(current.id()));
+        if (ticket.getStatus() == TicketStatus.NEW) {
+            ticket.changeStatus(TicketStatus.IN_PROGRESS);
+        }
+        // No save(): the ticket is managed, so Hibernate writes the changes at commit with
+        // "UPDATE ... WHERE version = ?". If another agent got there first in the meantime,
+        // that update hits 0 rows and Spring throws ObjectOptimisticLockingFailureException.
     }
 
     /** One ticket with its comments, oldest comment first. */

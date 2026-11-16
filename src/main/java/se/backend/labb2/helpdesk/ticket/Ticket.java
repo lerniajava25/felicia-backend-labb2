@@ -9,6 +9,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import se.backend.labb2.helpdesk.common.BaseEntity;
+import se.backend.labb2.helpdesk.common.RuleViolationException;
 import se.backend.labb2.helpdesk.user.User;
 
 @Entity
@@ -68,7 +69,9 @@ public class Ticket extends BaseEntity {
 
     public void changeStatus(TicketStatus next) {
         if (!status.canMoveTo(next)) {
-            throw new IllegalStateException("Cannot move ticket from " + status + " to " + next);
+            // Labels, not enum names: the message may be shown to the user.
+            throw new RuleViolationException(
+                    "A ticket cannot move from " + status.label() + " to " + next.label() + ".");
         }
         this.status = next;
     }
