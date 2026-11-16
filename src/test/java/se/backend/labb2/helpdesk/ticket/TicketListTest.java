@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import se.backend.labb2.helpdesk.TestcontainersConfiguration;
 import se.backend.labb2.helpdesk.security.CurrentUser;
 import se.backend.labb2.helpdesk.user.Role;
@@ -17,6 +18,7 @@ import se.backend.labb2.helpdesk.user.UserRepository;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -47,6 +49,9 @@ class TicketListTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private TicketService ticketService;
+
     private User billy;
     private User nobody;
 
@@ -57,11 +62,61 @@ class TicketListTest {
         User olle = userRepository.save(new User("olle", hash, "Olle Test", Role.USER));
         nobody = userRepository.save(new User("nobody", hash, "No Tickets", Role.USER));
 
+        Ticket inProgress = new Ticket("Billy forgot password", "Description", billy);
+        inProgress.changeStatus(TicketStatus.IN_PROGRESS);
         ticketRepository.saveAll(List.of(
                 new Ticket("Billy printer jam", "Description", billy),
-                new Ticket("Billy forgot password", "Description", billy),
+                inProgress,
                 new Ticket("Olle needs a screen", "Description", olle)));
         ticketRepository.flush();
+    }
+
+    @Test
+    void boardPutsTicketsInTheirStatusColumn() {
+        Board board = ticketService.boardFor(CurrentUser.from(billy));
+
+        assertThat(board.empty()).isFalse();
+        assertThat(board.columns())
+                .extracting(BoardColumn::status)
+                .containsExactly(TicketStatus.values());
+        assertThat(titlesIn(board, TicketStatus.NEW)).containsExactly("Billy printer jam");
+        assertThat(titlesIn(board, TicketStatus.IN_PROGRESS)).containsExactly("Billy forgot password");
+        assertThat(titlesIn(board, TicketStatus.WAITING_FOR_USER)).isEmpty();
+        assertThat(titlesIn(board, TicketStatus.RESOLVED)).isEmpty();
+        assertThat(titlesIn(board, TicketStatus.CLOSED)).isEmpty();
+    }
+
+    @Test
+    void boardShowsAllColumnHeadings() throws Exception {
+        mockMvc.perform(get("/tickets").with(user(CurrentUser.from(billy))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(allOf(
+                        containsString(">New<"),
+                        containsString(">In progress<"),
+                        containsString(">Waiting for user<"),
+                        containsString(">Resolved<"),
+                        containsString(">Closed<"))));
+    }
+
+    @Test
+    void userBoardHasNoWayToMoveTickets() throws Exception {
+        String html = mockMvc.perform(get("/tickets").with(user(CurrentUser.from(billy))))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        // The only form and button on the page are the nav's logout.
+        assertThat(StringUtils.countOccurrencesOf(html, "<form")).isEqualTo(1);
+        assertThat(StringUtils.countOccurrencesOf(html, "<button")).isEqualTo(1);
+        assertThat(html).contains("action=\"/logout\"");
+    }
+
+    private static List<String> titlesIn(Board board, TicketStatus status) {
+        return board.columns().stream()
+                .filter(column -> column.status() == status)
+                .findFirst().orElseThrow()
+                .tickets().stream()
+                .map(TicketRow::title)
+                .toList();
     }
 
     @Test
