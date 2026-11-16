@@ -59,6 +59,17 @@ public class TicketService {
         return new Board(columns, rows.isEmpty());
     }
 
+    /**
+     * Adds a comment by the logged-in user. Goes through loadVisible first, so a ticket
+     * you may not see gives 404 and nothing is saved.
+     */
+    @Transactional
+    public void addComment(Long ticketId, CommentForm form, CurrentUser current) {
+        Ticket ticket = loadVisible(ticketId, current);
+        User author = userRepository.getReferenceById(current.id());   // from the login, never the form
+        commentRepository.save(new Comment(ticket, author, form.getBody()));
+    }
+
     /** One ticket with its comments, oldest comment first. */
     public TicketDetails details(Long id, CurrentUser current) {
         Ticket ticket = loadVisible(id, current);

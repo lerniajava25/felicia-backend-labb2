@@ -48,6 +48,22 @@ public class TicketController {
     @GetMapping("/tickets/{id}")
     public String details(@PathVariable Long id, @AuthenticationPrincipal CurrentUser current, Model model) {
         model.addAttribute("ticket", ticketService.details(id, current));
+        model.addAttribute("commentForm", new CommentForm());
         return "tickets/detail";
+    }
+
+    @PostMapping("/tickets/{id}/comments")
+    public String addComment(@PathVariable Long id,
+                             @Valid @ModelAttribute("commentForm") CommentForm form,
+                             BindingResult result,
+                             @AuthenticationPrincipal CurrentUser current,
+                             Model model) {
+        if (result.hasErrors()) {
+            // details() goes through loadVisible too, so someone else's ticket is still 404.
+            model.addAttribute("ticket", ticketService.details(id, current));
+            return "tickets/detail";
+        }
+        ticketService.addComment(id, form, current);
+        return "redirect:/tickets/" + id;
     }
 }

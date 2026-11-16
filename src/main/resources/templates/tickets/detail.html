@@ -43,6 +43,23 @@
                 <p class="comment-body" th:text="${comment.body}">Comment</p>
             </li>
         </ol>
+
+        <!-- th:action adds the hidden CSRF token. No maxlength: browsers count a line
+             break as 1 character but send 2 (\r\n); the server checks the length. -->
+        <form th:action="@{/tickets/{id}/comments(id=${ticket.id})}" th:object="${commentForm}"
+              method="post" class="card form-card comment-form">
+            <div class="field">
+                <label for="body">Add a comment</label>
+                <textarea th:field="*{body}" rows="4" required
+                          th:aria-invalid="${#fields.hasErrors('body')} ? 'true'"
+                          th:aria-describedby="${#fields.hasErrors('body')} ? 'body-error'"></textarea>
+                <p id="body-error" class="field-error"
+                   th:if="${#fields.hasErrors('body')}" th:errors="*{body}">Error</p>
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Add comment</button>
+            </div>
+        </form>
     </section>
 </main>
 </body>
