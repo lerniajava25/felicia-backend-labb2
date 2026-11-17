@@ -20,6 +20,10 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class TicketService {
 
+    // Shown to the agent as flash messages, so written in plain words.
+    static final String STATUS_NOT_ALLOWED_MESSAGE = "That status change is not allowed";
+    static final String REASON_REQUIRED_MESSAGE = "Write a reason to close a new ticket.";
+
     private final TicketRepository ticketRepository;
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
@@ -93,13 +97,19 @@ public class TicketService {
 
     /**
      * Adds a comment by the logged-in user. Goes through loadVisible first, so a ticket
-     * you may not see gives 404 and nothing is saved.
+     * you may not see gives 404 and nothing is saved. When the ticket's owner answers a
+     * WAITING_FOR_USER ticket, it moves back to IN_PROGRESS.
      */
     @Transactional
     public void addComment(Long ticketId, CommentForm form, CurrentUser current) {
         Ticket ticket = loadVisible(ticketId, current);
         User author = userRepository.getReferenceById(current.id());   // from the login, never the form
         commentRepository.save(new Comment(ticket, author, form.getBody()));
+        // The owner answered the agent's question: the ticket needs work again.
+        // No @PreAuthorize: the user can't pick a status, the server makes only this move.
+        if (ticket.isCreatedBy(current.id()) && ticket.getStatus() == TicketStatus.WAITING_FOR_USER) {
+            ticket.changeStatus(TicketStatus.IN_PROGRESS);
+        }
     }
 
     /**
@@ -128,19 +138,31 @@ public class TicketService {
 
     /**
      * An agent moves the ticket to another status. Refuses a version that isn't the current
-     * one, and any move TicketStatus.canMoveTo forbids. Either way nothing is saved.
+     * one, any move TicketStatus.canMoveTo forbids, and closing a NEW ticket without a
+     * reason. Either way nothing is saved. The reason is ignored for every other move.
      */
     @Transactional
     @PreAuthorize("hasRole('AGENT')")
-    public void changeStatus(Long id, TicketStatus next, Long version, CurrentUser current) {
+    public void changeStatus(Long id, TicketStatus next, String reason, Long version, CurrentUser current) {
         Ticket ticket = loadVisible(id, current);
         // Someone changed the ticket after the page was loaded: change nothing.
         if (!ticket.getVersion().equals(version)) {
             throw new ObjectOptimisticLockingFailureException(Ticket.class, id);
         }
-        // Throws RuleViolationException before it touches the status, and the exception
-        // also rolls the transaction back, so a forbidden move never reaches the database.
+        // Checked here, not only in Ticket.changeStatus, so each refusal gets its own message.
+        if (!ticket.getStatus().canMoveTo(next)) {
+            throw new RuleViolationException(STATUS_NOT_ALLOWED_MESSAGE);
+        }
+        // Closing a NEW ticket skips all work and can't be undone, so the user is told why.
+        boolean closingNew = ticket.getStatus() == TicketStatus.NEW && next == TicketStatus.CLOSED;
+        if (closingNew && (reason == null || reason.isBlank())) {
+            throw new RuleViolationException(REASON_REQUIRED_MESSAGE);
+        }
         ticket.changeStatus(next);
+        if (closingNew) {
+            User agent = userRepository.getReferenceById(current.id());   // from the login, never the form
+            commentRepository.save(new Comment(ticket, agent, "Closed: " + reason.trim()));
+        }
     }
 
     /** One ticket with its comments (oldest first) and the statuses it may move to. */

@@ -56,6 +56,7 @@ class TicketCommentTest {
     private PasswordEncoder passwordEncoder;
 
     private User billy;
+    private User pippi;
     private Ticket billysTicket;
     private Ticket ollesTicket;
 
@@ -64,6 +65,7 @@ class TicketCommentTest {
         String hash = passwordEncoder.encode(TEST_PASSWORD);
         billy = userRepository.save(new User("billy", hash, "Billy Test", Role.USER));
         User olle = userRepository.save(new User("olle", hash, "Olle Test", Role.USER));
+        pippi = userRepository.save(new User("pippi", hash, "Pippi Test", Role.AGENT));
 
         billysTicket = ticketRepository.save(new Ticket("Billy printer jam", "Paper everywhere", billy));
         ollesTicket = ticketRepository.save(new Ticket("Olle needs a screen", "A big one", olle));
@@ -145,5 +147,49 @@ class TicketCommentTest {
                 .andExpect(status().isForbidden());
 
         assertThat(commentRepository.count()).isEqualTo(before);
+    }
+
+    /** Moves Billy's ticket step by step, as an agent did earlier. */
+    private void moveBillysTicketTo(TicketStatus... steps) {
+        for (TicketStatus step : steps) {
+            billysTicket.changeStatus(step);
+        }
+        ticketRepository.flush();
+    }
+
+    private void comment(User author, String body) throws Exception {
+        mockMvc.perform(post("/tickets/{id}/comments", billysTicket.getId())
+                        .param("body", body)
+                        .with(user(CurrentUser.from(author)))
+                        .with(csrf()))
+                .andExpect(redirectedUrl("/tickets/" + billysTicket.getId()));
+    }
+
+    @Test
+    void ownerAnswerMovesWaitingTicketBackToInProgress() throws Exception {
+        moveBillysTicketTo(TicketStatus.IN_PROGRESS, TicketStatus.WAITING_FOR_USER);
+
+        comment(billy, "Here is the printer model");
+
+        assertThat(billysTicket.getStatus()).isEqualTo(TicketStatus.IN_PROGRESS);
+    }
+
+    @Test
+    void agentCommentKeepsTicketWaiting() throws Exception {
+        moveBillysTicketTo(TicketStatus.IN_PROGRESS, TicketStatus.WAITING_FOR_USER);
+
+        comment(pippi, "Which printer model is it?");
+
+        assertThat(billysTicket.getStatus()).isEqualTo(TicketStatus.WAITING_FOR_USER);
+        assertThat(commentRepository.findByTicketIdOrderByCreatedAtAsc(billysTicket.getId())).hasSize(1);
+    }
+
+    @Test
+    void ownerCommentOnInProgressTicketKeepsStatus() throws Exception {
+        moveBillysTicketTo(TicketStatus.IN_PROGRESS);
+
+        comment(billy, "Any news?");
+
+        assertThat(billysTicket.getStatus()).isEqualTo(TicketStatus.IN_PROGRESS);
     }
 }
