@@ -126,11 +126,32 @@ public class TicketService {
         // that update hits 0 rows and Spring throws ObjectOptimisticLockingFailureException.
     }
 
-    /** One ticket with its comments, oldest comment first. */
+    /**
+     * An agent moves the ticket to another status. Refuses a version that isn't the current
+     * one, and any move TicketStatus.canMoveTo forbids. Either way nothing is saved.
+     */
+    @Transactional
+    @PreAuthorize("hasRole('AGENT')")
+    public void changeStatus(Long id, TicketStatus next, Long version, CurrentUser current) {
+        Ticket ticket = loadVisible(id, current);
+        // Someone changed the ticket after the page was loaded: change nothing.
+        if (!ticket.getVersion().equals(version)) {
+            throw new ObjectOptimisticLockingFailureException(Ticket.class, id);
+        }
+        // Throws RuleViolationException before it touches the status, and the exception
+        // also rolls the transaction back, so a forbidden move never reaches the database.
+        ticket.changeStatus(next);
+    }
+
+    /** One ticket with its comments (oldest first) and the statuses it may move to. */
     public TicketDetails details(Long id, CurrentUser current) {
         Ticket ticket = loadVisible(id, current);
         List<Comment> comments = commentRepository.findByTicketIdOrderByCreatedAtAsc(ticket.getId());
-        return TicketDetails.from(ticket, comments);
+        // Enum order, so the dropdown always lists the moves in the same order.
+        List<TicketStatus> allowedMoves = Arrays.stream(TicketStatus.values())
+                .filter(ticket.getStatus()::canMoveTo)
+                .toList();
+        return TicketDetails.from(ticket, comments, allowedMoves);
     }
 
     /**

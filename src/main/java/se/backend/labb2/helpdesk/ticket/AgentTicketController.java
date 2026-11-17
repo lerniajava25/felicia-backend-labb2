@@ -21,6 +21,8 @@ public class AgentTicketController {
 
     static final String CONFLICT_MESSAGE = "Someone else changed this ticket. Check it and try again.";
     static final String ASSIGNED_MESSAGE = "The ticket is now assigned to you.";
+    static final String STATUS_CHANGED_MESSAGE = "The status has been changed.";
+    static final String STATUS_NOT_ALLOWED_MESSAGE = "That status change is not allowed";
 
     private final TicketService ticketService;
 
@@ -53,6 +55,29 @@ public class AgentTicketController {
         } catch (RuleViolationException e) {
             // A business rule said no; its message is written for the user.
             flash.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/tickets/" + id;
+    }
+
+    @PostMapping("/agent/tickets/{id}/status")
+    public String changeStatus(@PathVariable Long id,
+                               @Valid ChangeStatusForm form,
+                               BindingResult result,
+                               @AuthenticationPrincipal CurrentUser current,
+                               RedirectAttributes flash) {
+        if (result.hasErrors()) {
+            // The dropdown always sends a real status and the version; only a hand-made request doesn't.
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+        try {
+            ticketService.changeStatus(id, form.getStatus(), form.getVersion(), current);
+            flash.addFlashAttribute("message", STATUS_CHANGED_MESSAGE);
+        } catch (OptimisticLockingFailureException e) {
+            // Covers both the version check in the service and Hibernate's check at commit.
+            flash.addFlashAttribute("error", CONFLICT_MESSAGE);
+        } catch (RuleViolationException e) {
+            // The move isn't allowed from the current status.
+            flash.addFlashAttribute("error", STATUS_NOT_ALLOWED_MESSAGE);
         }
         return "redirect:/tickets/" + id;
     }

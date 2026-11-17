@@ -43,6 +43,19 @@
                 <input type="hidden" name="version" th:value="${ticket.version}">
                 <button type="submit" class="btn btn-secondary">Assign to me</button>
             </form>
+
+            <!-- Only the moves TicketStatus.canMoveTo allows; the service checks them again.
+                 No form at all when nothing is allowed (a CLOSED ticket). -->
+            <form th:unless="${ticket.allowedMoves.isEmpty()}"
+                  th:action="@{/agent/tickets/{id}/status(id=${ticket.id})}" method="post" class="status-form">
+                <input type="hidden" name="version" th:value="${ticket.version}">
+                <label for="status">New status</label>
+                <select id="status" name="status">
+                    <option th:each="move : ${ticket.allowedMoves}"
+                            th:value="${move.name()}" th:text="${move.label()}">In progress</option>
+                </select>
+                <button type="submit" class="btn btn-secondary">Change status</button>
+            </form>
         </th:block>
 
         <!-- white-space: pre-line in app.css keeps the user's line breaks -->
