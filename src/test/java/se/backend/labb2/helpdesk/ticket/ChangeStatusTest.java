@@ -17,6 +17,8 @@ import se.backend.labb2.helpdesk.user.Role;
 import se.backend.labb2.helpdesk.user.User;
 import se.backend.labb2.helpdesk.user.UserRepository;
 
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
@@ -50,6 +52,9 @@ class ChangeStatusTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private CommentRepository commentRepository;
 
     @Autowired
     private EntityManager entityManager;
@@ -105,7 +110,7 @@ class ChangeStatusTest {
                         .with(user(CurrentUser.from(pippi)))
                         .with(csrf()))
                 .andExpect(redirectedUrl("/tickets/" + ticket.getId()))
-                .andExpect(flash().attribute("error", AgentTicketController.STATUS_NOT_ALLOWED_MESSAGE));
+                .andExpect(flash().attribute("error", TicketService.STATUS_NOT_ALLOWED_MESSAGE));
 
         ticketRepository.flush();
         assertThat(ticket.getStatus()).isEqualTo(TicketStatus.CLOSED);
@@ -154,6 +159,7 @@ class ChangeStatusTest {
     void adminCanChangeStatusToo() throws Exception {
         mockMvc.perform(post("/agent/tickets/{id}/status", ticket.getId())
                         .param("status", "CLOSED")
+                        .param("reason", "Opened by mistake")
                         .param("version", ticket.getVersion().toString())
                         .with(user(CurrentUser.from(admin)))
                         .with(csrf()))
@@ -204,6 +210,76 @@ class ChangeStatusTest {
         Ticket open = ticketRepository.saveAndFlush(new Ticket("Open one", "Still open", billy));
         mockMvc.perform(get("/tickets/{id}", open.getId()).with(user(CurrentUser.from(pippi))))
                 .andExpect(content().string(containsString("Change status")));
+    }
+
+    /** Posts "move to CLOSED" as Pippi with the given reason (null sends no reason at all). */
+    private void closeTicket(String reason, String expectedFlashKey, String expectedFlash) throws Exception {
+        var request = post("/agent/tickets/{id}/status", ticket.getId())
+                .param("status", "CLOSED")
+                .param("version", ticket.getVersion().toString())
+                .with(user(CurrentUser.from(pippi)))
+                .with(csrf());
+        if (reason != null) {
+            request.param("reason", reason);
+        }
+        mockMvc.perform(request)
+                .andExpect(redirectedUrl("/tickets/" + ticket.getId()))
+                .andExpect(flash().attribute(expectedFlashKey, expectedFlash));
+    }
+
+    private List<Comment> commentsOnTicket() {
+        return commentRepository.findByTicketIdOrderByCreatedAtAsc(ticket.getId());
+    }
+
+    @Test
+    void closingNewTicketWithoutReasonIsRefused() throws Exception {
+        closeTicket(null, "error", TicketService.REASON_REQUIRED_MESSAGE);
+
+        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.NEW);
+        assertThat(commentsOnTicket()).isEmpty();
+    }
+
+    @Test
+    void closingNewTicketWithBlankReasonIsRefused() throws Exception {
+        closeTicket("   ", "error", TicketService.REASON_REQUIRED_MESSAGE);
+
+        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.NEW);
+        assertThat(commentsOnTicket()).isEmpty();
+    }
+
+    @Test
+    void closingNewTicketWithReasonClosesItAndSavesTheReasonAsComment() throws Exception {
+        closeTicket("  Duplicate of another ticket ", "message", AgentTicketController.STATUS_CHANGED_MESSAGE);
+
+        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.CLOSED);
+        assertThat(commentsOnTicket()).singleElement().satisfies(comment -> {
+            assertThat(comment.getBody()).isEqualTo("Closed: Duplicate of another ticket");
+            assertThat(comment.getAuthor().getId()).isEqualTo(pippi.getId());
+        });
+    }
+
+    @Test
+    void closingResolvedTicketNeedsNoReason() throws Exception {
+        moveTo(TicketStatus.IN_PROGRESS);
+        moveTo(TicketStatus.RESOLVED);
+
+        closeTicket(null, "message", AgentTicketController.STATUS_CHANGED_MESSAGE);
+
+        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.CLOSED);
+        assertThat(commentsOnTicket()).isEmpty();
+    }
+
+    @Test
+    void reasonFieldOnlyShownForNewTicket() throws Exception {
+        mockMvc.perform(get("/tickets/{id}", ticket.getId()).with(user(CurrentUser.from(pippi))))
+                .andExpect(content().string(containsString("name=\"reason\"")));
+
+        moveTo(TicketStatus.IN_PROGRESS);
+        mockMvc.perform(get("/tickets/{id}", ticket.getId()).with(user(CurrentUser.from(pippi))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(allOf(
+                        containsString("Change status"),
+                        not(containsString("name=\"reason\"")))));
     }
 
     @Test

@@ -54,6 +54,12 @@
                     <option th:each="move : ${ticket.allowedMoves}"
                             th:value="${move.name()}" th:text="${move.label()}">In progress</option>
                 </select>
+                <!-- Only a NEW ticket needs a reason to be closed. Not "required": In progress
+                     needs none. The service checks it. -->
+                <th:block th:if="${ticket.status.name() == 'NEW'}">
+                    <label for="reason">Reason (needed to close)</label>
+                    <textarea id="reason" name="reason" rows="2"></textarea>
+                </th:block>
                 <button type="submit" class="btn btn-secondary">Change status</button>
             </form>
         </th:block>
