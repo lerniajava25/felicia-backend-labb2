@@ -12,6 +12,9 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
     List<Ticket> findByCreatedByIdOrderByLastModifiedDesc(Long userId);
 
     @EntityGraph(attributePaths = {"createdBy", "assignee"})
+    List<Ticket> findByAssigneeIdOrderByLastModifiedDesc(Long userId);
+
+    @EntityGraph(attributePaths = {"createdBy", "assignee"})
     List<Ticket> findAllByOrderByLastModifiedDesc();
 
     @EntityGraph(attributePaths = {"createdBy", "assignee"})

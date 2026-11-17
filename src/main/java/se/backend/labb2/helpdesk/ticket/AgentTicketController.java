@@ -22,6 +22,8 @@ public class AgentTicketController {
     static final String CONFLICT_MESSAGE = "Someone else changed this ticket. Check it and try again.";
     static final String ASSIGNED_MESSAGE = "The ticket is now assigned to you.";
     static final String STATUS_CHANGED_MESSAGE = "The status has been changed.";
+    static final String ALL_TICKETS_HEADING = "All tickets";
+    static final String ASSIGNED_HEADING = "Assigned to me";
 
     private final TicketService ticketService;
 
@@ -29,9 +31,18 @@ public class AgentTicketController {
         this.ticketService = ticketService;
     }
 
+    // Both boards use the same template; only the heading and the tickets differ.
     @GetMapping("/agent/tickets")
     public String list(Model model) {
+        model.addAttribute("heading", ALL_TICKETS_HEADING);
         model.addAttribute("board", ticketService.boardOfAll());
+        return "agent/tickets";
+    }
+
+    @GetMapping("/agent/tickets/mine")
+    public String assignedToMe(@AuthenticationPrincipal CurrentUser current, Model model) {
+        model.addAttribute("heading", ASSIGNED_HEADING);
+        model.addAttribute("board", ticketService.assignedBoardFor(current));
         return "agent/tickets";
     }
 

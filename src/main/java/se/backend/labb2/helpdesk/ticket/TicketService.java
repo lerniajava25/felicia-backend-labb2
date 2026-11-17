@@ -66,7 +66,22 @@ public class TicketService {
      */
     @PreAuthorize("hasRole('AGENT')")
     public AgentBoard boardOfAll() {
-        List<AgentTicketRow> rows = listAll();
+        return agentBoard(listAll());
+    }
+
+    /**
+     * The tickets assigned to the logged-in agent (or admin) as a board, built like boardOfAll.
+     * The assignee comes from the login, never from the URL.
+     */
+    @PreAuthorize("hasRole('AGENT')")
+    public AgentBoard assignedBoardFor(CurrentUser current) {
+        return agentBoard(ticketRepository.findByAssigneeIdOrderByLastModifiedDesc(current.id()).stream()
+                .map(AgentTicketRow::from)
+                .toList());
+    }
+
+    /** Groups rows (newest first) into one column per status; shared by both agent boards. */
+    private static AgentBoard agentBoard(List<AgentTicketRow> rows) {
         // groupingBy keeps the list's order inside each group, so newest first survives.
         Map<TicketStatus, List<AgentTicketRow>> byStatus = rows.stream()
                 .collect(Collectors.groupingBy(AgentTicketRow::status));

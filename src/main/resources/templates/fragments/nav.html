@@ -2,10 +2,13 @@
      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
      class="nav" th:fragment="nav">
     <a class="nav-brand" th:href="@{/}">Helpdesk</a>
-    <a sec:authorize="isAuthenticated()" th:href="@{/tickets}">My tickets</a>
-    <a sec:authorize="isAuthenticated()" th:href="@{/tickets/new}">New ticket</a>
-    <!-- Admins see it too: the role hierarchy gives ADMIN the AGENT role. -->
+    <!-- Agents create no tickets, so they get "Assigned to me" instead of "My tickets".
+         "isAuthenticated() and": a logged-out visitor has no AGENT role either.
+         Admins count as agents: the role hierarchy gives ADMIN the AGENT role. -->
+    <a sec:authorize="isAuthenticated() and !hasRole('AGENT')" th:href="@{/tickets}">My tickets</a>
     <a sec:authorize="hasRole('AGENT')" th:href="@{/agent/tickets}">All tickets</a>
+    <a sec:authorize="hasRole('AGENT')" th:href="@{/agent/tickets/mine}">Assigned to me</a>
+    <a sec:authorize="isAuthenticated()" th:href="@{/tickets/new}">New ticket</a>
     <!-- Name and role share one element, so only a normal space separates them
          (the nav's flex gap applies between nav items, not inside one). -->
     <span sec:authorize="isAuthenticated()" class="nav-user">

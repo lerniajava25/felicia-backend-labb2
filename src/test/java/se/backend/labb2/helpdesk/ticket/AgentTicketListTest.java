@@ -139,14 +139,19 @@ class AgentTicketListTest {
     }
 
     @Test
-    void navShowsAllTicketsForAgentAndAdminOnly() throws Exception {
-        String link = "href=\"/agent/tickets\"";
+    void navShowsAgentLinksForAgentAndAdminOnly() throws Exception {
+        String allTickets = "href=\"/agent/tickets\"";
+        String assigned = "href=\"/agent/tickets/mine\"";
+        String myTickets = "href=\"/tickets\"";
 
-        mockMvc.perform(get("/tickets").with(user(CurrentUser.from(pippi))))
-                .andExpect(content().string(containsString(link)));
-        mockMvc.perform(get("/tickets").with(user(CurrentUser.from(admin))))
-                .andExpect(content().string(containsString(link)));
+        for (User agentOrAdmin : List.of(pippi, admin)) {
+            mockMvc.perform(get("/tickets").with(user(CurrentUser.from(agentOrAdmin))))
+                    .andExpect(content().string(allOf(containsString(allTickets), containsString(assigned))))
+                    .andExpect(content().string(not(containsString(myTickets))));
+        }
         mockMvc.perform(get("/tickets").with(user(CurrentUser.from(billy))))
-                .andExpect(content().string(not(containsString(link))));
+                .andExpect(content().string(containsString(myTickets)))
+                .andExpect(content().string(not(containsString(allTickets))))
+                .andExpect(content().string(not(containsString(assigned))));
     }
 }

@@ -1,15 +1,16 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('All tickets · Helpdesk')}"></head>
+<head th:replace="~{fragments/layout :: head(|${heading} · Helpdesk|)}"></head>
 <body>
 <div th:replace="~{fragments/nav :: nav}"></div>
 
 <main>
-    <h1>All tickets</h1>
+    <!-- "All tickets" or "Assigned to me", set by AgentTicketController -->
+    <h1 th:text="${heading}">All tickets</h1>
 
-    <p th:if="${board.empty}" class="msg msg-info" role="status">No tickets yet.</p>
+    <p th:if="${board.empty}" class="msg msg-info" role="status">No tickets here yet.</p>
 
-    <!-- The same board as "My tickets", with every user's tickets: one column per status. -->
+    <!-- Used for "All tickets" and "Assigned to me": one column per status. -->
     <div th:unless="${board.empty}" class="board">
         <!-- IN_PROGRESS becomes "board-column status-in-progress" -->
         <section th:each="column : ${board.columns}"
