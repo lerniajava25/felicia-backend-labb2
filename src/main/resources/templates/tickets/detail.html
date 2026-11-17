@@ -23,7 +23,7 @@
             <!-- IN_PROGRESS becomes "status status-in-progress", same as the list -->
             <dd th:with="slug=${ticket.status.name().toLowerCase().replace('_', '-')}"
                 th:class="${'status status-' + slug}"
-                th:text="${ticket.status}">NEW</dd>
+                th:text="${ticket.status.label()}">New</dd>
             <dt>Created by</dt>
             <dd th:text="${ticket.createdBy}">Name</dd>
             <dt>Assigned to</dt>
@@ -35,9 +35,12 @@
             <dd th:text="${ticket.lastModified}">2026-01-01 12:00</dd>
         </dl>
 
-        <!-- Only hides the button. The /agent/** URL rule and @PreAuthorize do the real check.
-             The version lets the server notice if someone changed the ticket meanwhile. -->
-        <th:block sec:authorize="hasRole('AGENT')">
+        <!-- Only hides the buttons. The /agent/** URL rule and @PreAuthorize do the real check.
+             The version lets the server notice if someone changed the ticket meanwhile.
+             Not shown for CLOSED: both forms are hidden then, so the heading would stand alone. -->
+        <section sec:authorize="hasRole('AGENT')" th:unless="${ticket.status.name() == 'CLOSED'}"
+                 class="agent-tools" aria-labelledby="agent-tools-title">
+            <h2 id="agent-tools-title" class="ticket-section-title">Agent tools</h2>
             <form th:unless="${ticket.status.name() == 'CLOSED'}"
                   th:action="@{/agent/tickets/{id}/assign(id=${ticket.id})}" method="post" class="assign-form">
                 <input type="hidden" name="version" th:value="${ticket.version}">
@@ -62,24 +65,29 @@
                 </th:block>
                 <button type="submit" class="btn btn-secondary">Change status</button>
             </form>
-        </th:block>
+        </section>
 
-        <!-- white-space: pre-line in app.css keeps the user's line breaks -->
-        <p class="ticket-description" th:text="${ticket.description}">Description</p>
+        <section class="ticket-description-section" aria-labelledby="description-title">
+            <h2 id="description-title">Description</h2>
+            <!-- white-space: pre-line in app.css keeps the user's line breaks -->
+            <p class="ticket-description" th:text="${ticket.description}">Description</p>
+        </section>
     </article>
 
     <section class="ticket-comments">
-        <h2>Comments</h2>
-        <p th:if="${ticket.comments.isEmpty()}">No comments yet.</p>
-        <ol th:unless="${ticket.comments.isEmpty()}" class="comment-list">
-            <li th:each="comment : ${ticket.comments}" class="comment">
-                <p class="comment-header">
-                    <strong th:text="${comment.author}">Name</strong>
-                    <span class="comment-time" th:text="${comment.created}">2026-01-01 12:00</span>
-                </p>
-                <p class="comment-body" th:text="${comment.body}">Comment</p>
-            </li>
-        </ol>
+        <div class="comments-card">
+            <h2>Comments</h2>
+            <p th:if="${ticket.comments.isEmpty()}" class="comments-empty">No comments yet.</p>
+            <ol th:unless="${ticket.comments.isEmpty()}" class="comment-list">
+                <li th:each="comment : ${ticket.comments}" class="comment">
+                    <p class="comment-header">
+                        <strong th:text="${comment.author}">Name</strong>
+                        <span class="comment-time" th:text="${comment.created}">2026-01-01 12:00</span>
+                    </p>
+                    <p class="comment-body" th:text="${comment.body}">Comment</p>
+                </li>
+            </ol>
+        </div>
 
         <!-- th:action adds the hidden CSRF token. No maxlength: browsers count a line
              break as 1 character but send 2 (\r\n); the server checks the length. -->
