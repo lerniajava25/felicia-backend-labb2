@@ -18,7 +18,7 @@ public class ChangeStatusForm {
     @NotNull
     private TicketStatus status;
 
-    @Size(max = 1990)
+    @Size(max = 1990, message = "The reason can be at most 1990 characters")
     private String reason;
 
     @NotNull

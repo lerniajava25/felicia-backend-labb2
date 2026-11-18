@@ -75,6 +75,13 @@ public class AgentTicketController {
                                BindingResult result,
                                @AuthenticationPrincipal CurrentUser current,
                                RedirectAttributes flash) {
+        if (result.hasFieldErrors("reason")) {
+            // A real agent can type too much (no maxlength, see detail.html): show the
+            // message and give the text back, so nothing they wrote is lost.
+            flash.addFlashAttribute("error", result.getFieldError("reason").getDefaultMessage());
+            flash.addFlashAttribute("reason", form.getReason());
+            return "redirect:/tickets/" + id;
+        }
         if (result.hasErrors()) {
             // The dropdown always sends a real status and the version; only a hand-made request doesn't.
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);

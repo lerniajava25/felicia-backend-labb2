@@ -58,10 +58,12 @@
                             th:value="${move.name()}" th:text="${move.label()}">In progress</option>
                 </select>
                 <!-- Only a NEW ticket needs a reason to be closed. Not "required": In progress
-                     needs none. The service checks it. -->
+                     needs none. The service checks it. No maxlength, same as the comment form
+                     (a line break counts 1 but is sent as 2); a too-long reason comes back
+                     as the flash "reason", so the agent can shorten it instead of retyping. -->
                 <th:block th:if="${ticket.status.name() == 'NEW'}">
                     <label for="reason">Reason (needed to close)</label>
-                    <textarea id="reason" name="reason" rows="2"></textarea>
+                    <textarea id="reason" name="reason" rows="2" th:text="${reason}"></textarea>
                 </th:block>
                 <button type="submit" class="btn btn-secondary">Change status</button>
             </form>

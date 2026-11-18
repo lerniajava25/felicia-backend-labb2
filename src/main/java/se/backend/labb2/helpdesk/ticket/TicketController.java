@@ -1,6 +1,7 @@
 package se.backend.labb2.helpdesk.ticket;
 
 import jakarta.validation.Valid;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -9,10 +10,14 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import se.backend.labb2.helpdesk.security.CurrentUser;
 
 @Controller
 public class TicketController {
+
+    static final String COMMENT_CONFLICT_MESSAGE =
+            "Someone changed this ticket while you were writing. Your comment was not saved: check the ticket and send it again.";
 
     private final TicketService ticketService;
 
@@ -48,7 +53,10 @@ public class TicketController {
     @GetMapping("/tickets/{id}")
     public String details(@PathVariable Long id, @AuthenticationPrincipal CurrentUser current, Model model) {
         model.addAttribute("ticket", ticketService.details(id, current));
-        model.addAttribute("commentForm", new CommentForm());
+        // After a conflict the flash "commentForm" holds the unsaved text; keep it.
+        if (!model.containsAttribute("commentForm")) {
+            model.addAttribute("commentForm", new CommentForm());
+        }
         return "tickets/detail";
     }
 
@@ -57,13 +65,21 @@ public class TicketController {
                              @Valid @ModelAttribute("commentForm") CommentForm form,
                              BindingResult result,
                              @AuthenticationPrincipal CurrentUser current,
-                             Model model) {
+                             Model model,
+                             RedirectAttributes flash) {
         if (result.hasErrors()) {
             // details() goes through loadVisible too, so someone else's ticket is still 404.
             model.addAttribute("ticket", ticketService.details(id, current));
             return "tickets/detail";
         }
-        ticketService.addComment(id, form, current);
+        try {
+            ticketService.addComment(id, form, current);
+        } catch (OptimisticLockingFailureException e) {
+            // Thrown at commit when the owner's reply moves a waiting ticket while an agent
+            // changed it too; everything was rolled back. Give the text back so it isn't lost.
+            flash.addFlashAttribute("error", COMMENT_CONFLICT_MESSAGE);
+            flash.addFlashAttribute("commentForm", form);
+        }
         return "redirect:/tickets/" + id;
     }
 }

@@ -149,6 +149,23 @@ class TicketCommentTest {
         assertThat(commentRepository.count()).isEqualTo(before);
     }
 
+    @Test
+    void pageGivesBackTheUnsavedCommentAfterAConflict() throws Exception {
+        CommentForm unsaved = new CommentForm();
+        unsaved.setBody("Here is the model & serial");
+
+        mockMvc.perform(get("/tickets/{id}", billysTicket.getId())
+                        .flashAttr("commentForm", unsaved)
+                        .with(user(CurrentUser.from(billy))))
+                .andExpect(status().isOk())
+                // Escaped by th:field, inside the comment textarea.
+                .andExpect(content().string(containsString(">Here is the model &amp; serial</textarea>")));
+
+        // A normal visit still starts with an empty comment field.
+        mockMvc.perform(get("/tickets/{id}", billysTicket.getId()).with(user(CurrentUser.from(billy))))
+                .andExpect(content().string(not(containsString("Here is the model"))));
+    }
+
     /** Moves Billy's ticket step by step, as an agent did earlier. */
     private void moveBillysTicketTo(TicketStatus... steps) {
         for (TicketStatus step : steps) {

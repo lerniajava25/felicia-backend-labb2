@@ -259,6 +259,45 @@ class ChangeStatusTest {
     }
 
     @Test
+    void tooLongReasonComesBackWithTheMessageAndNothingChanges() throws Exception {
+        String tooLong = "x".repeat(1991);
+
+        mockMvc.perform(post("/agent/tickets/{id}/status", ticket.getId())
+                        .param("status", "CLOSED")
+                        .param("reason", tooLong)
+                        .param("version", ticket.getVersion().toString())
+                        .with(user(CurrentUser.from(pippi)))
+                        .with(csrf()))
+                .andExpect(redirectedUrl("/tickets/" + ticket.getId()))
+                .andExpect(flash().attribute("error", "The reason can be at most 1990 characters"))
+                .andExpect(flash().attribute("reason", tooLong));
+
+        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.NEW);
+        assertThat(commentsOnTicket()).isEmpty();
+    }
+
+    @Test
+    void pageGivesTheRejectedReasonBack() throws Exception {
+        mockMvc.perform(get("/tickets/{id}", ticket.getId())
+                        .flashAttr("reason", "Spam, & sent twice")
+                        .with(user(CurrentUser.from(pippi))))
+                .andExpect(status().isOk())
+                // Escaped by th:text, inside the textarea.
+                .andExpect(content().string(containsString(">Spam, &amp; sent twice</textarea>")));
+    }
+
+    @Test
+    void missingVersionIsStillBadRequest() throws Exception {
+        mockMvc.perform(post("/agent/tickets/{id}/status", ticket.getId())
+                        .param("status", "IN_PROGRESS")
+                        .with(user(CurrentUser.from(pippi)))
+                        .with(csrf()))
+                .andExpect(status().isBadRequest());
+
+        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.NEW);
+    }
+
+    @Test
     void closingResolvedTicketNeedsNoReason() throws Exception {
         moveTo(TicketStatus.IN_PROGRESS);
         moveTo(TicketStatus.RESOLVED);
