@@ -77,9 +77,12 @@ public class AgentTicketController {
                                RedirectAttributes flash) {
         if (result.hasFieldErrors("reason")) {
             // A real agent can type too much (no maxlength, see detail.html): show the
-            // message and give the text back, so nothing they wrote is lost.
+            // message and give the text back, so nothing they wrote is lost. The chosen status
+            // comes back too, or the dropdown would fall back to its first option and a second
+            // click could make a different move than the agent picked.
             flash.addFlashAttribute("error", result.getFieldError("reason").getDefaultMessage());
             flash.addFlashAttribute("reason", form.getReason());
+            flash.addFlashAttribute("selectedStatus", form.getStatus());
             return "redirect:/tickets/" + id;
         }
         if (result.hasErrors()) {

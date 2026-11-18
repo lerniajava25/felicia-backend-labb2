@@ -15,6 +15,14 @@
     <p th:if="${message}" class="msg msg-info" role="status" th:text="${message}">Done</p>
     <p th:if="${error}" class="msg msg-error" role="alert" th:text="${error}">Error</p>
 
+    <!-- The ticket left NEW while the agent's reason was being refused (someone else moved it),
+         so the reason field is gone. Show the text read-only so it can be copied; it is in no
+         form and has no name, so it can't change the ticket. -->
+    <div th:if="${reason != null and ticket.status.name() != 'NEW'}" class="reason-recovery">
+        <label for="unsaved-reason">Your reason was not used, because the ticket changed. Copy it if you still need it:</label>
+        <textarea id="unsaved-reason" readonly rows="3" th:text="${reason}"></textarea>
+    </div>
+
     <article class="ticket">
         <h1 th:text="${ticket.title}">Title</h1>
 
@@ -54,8 +62,11 @@
                 <input type="hidden" name="version" th:value="${ticket.version}">
                 <label for="status">New status</label>
                 <select id="status" name="status">
+                    <!-- selectedStatus: the flash after a too-long reason. Only allowed moves
+                         have an option, so a move that's no longer allowed selects nothing. -->
                     <option th:each="move : ${ticket.allowedMoves}"
-                            th:value="${move.name()}" th:text="${move.label()}">In progress</option>
+                            th:value="${move.name()}" th:selected="${move == selectedStatus}"
+                            th:text="${move.label()}">In progress</option>
                 </select>
                 <!-- Only a NEW ticket needs a reason to be closed. Not "required": In progress
                      needs none. The service checks it. No maxlength, same as the comment form

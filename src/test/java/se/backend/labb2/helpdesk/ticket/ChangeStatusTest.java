@@ -270,7 +270,8 @@ class ChangeStatusTest {
                         .with(csrf()))
                 .andExpect(redirectedUrl("/tickets/" + ticket.getId()))
                 .andExpect(flash().attribute("error", "The reason can be at most 1990 characters"))
-                .andExpect(flash().attribute("reason", tooLong));
+                .andExpect(flash().attribute("reason", tooLong))
+                .andExpect(flash().attribute("selectedStatus", TicketStatus.CLOSED));
 
         assertThat(ticket.getStatus()).isEqualTo(TicketStatus.NEW);
         assertThat(commentsOnTicket()).isEmpty();
@@ -284,6 +285,68 @@ class ChangeStatusTest {
                 .andExpect(status().isOk())
                 // Escaped by th:text, inside the textarea.
                 .andExpect(content().string(containsString(">Spam, &amp; sent twice</textarea>")));
+    }
+
+    @Test
+    void pageSelectsTheRejectedStatusAgain() throws Exception {
+        mockMvc.perform(get("/tickets/{id}", ticket.getId())
+                        .flashAttr("selectedStatus", TicketStatus.CLOSED)
+                        .with(user(CurrentUser.from(pippi))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(allOf(
+                        containsString("<option value=\"CLOSED\" selected=\"selected\">Closed</option>"),
+                        containsString("<option value=\"IN_PROGRESS\">In progress</option>"))));
+    }
+
+    @Test
+    void rejectedStatusThatIsNoLongerAllowedSelectsNothing() throws Exception {
+        // Someone moved the ticket meanwhile: CLOSED is not one of its moves any more.
+        moveTo(TicketStatus.IN_PROGRESS);
+
+        mockMvc.perform(get("/tickets/{id}", ticket.getId())
+                        .flashAttr("selectedStatus", TicketStatus.CLOSED)
+                        .with(user(CurrentUser.from(pippi))))
+                .andExpect(status().isOk())
+                .andExpect(content().string(allOf(
+                        containsString("<option value=\"RESOLVED\">"),
+                        not(containsString("selected=\"selected\"")))));
+    }
+
+    /** Opens the ticket as Pippi with a reason flashed back from a refused close. */
+    private String pageWithFlashedReason(String reason) throws Exception {
+        return mockMvc.perform(get("/tickets/{id}", ticket.getId())
+                        .flashAttr("reason", reason)
+                        .with(user(CurrentUser.from(pippi))))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+    }
+
+    @Test
+    void flashedReasonStaysVisibleWhenTicketMovedOn() throws Exception {
+        moveTo(TicketStatus.IN_PROGRESS);   // someone else moved it meanwhile
+
+        String html = pageWithFlashedReason("Duplicate of #12");
+
+        assertThat(html).contains("id=\"unsaved-reason\"", ">Duplicate of #12</textarea>");
+        assertThat(html).doesNotContain("name=\"reason\"");   // the NEW-only field is still gone
+    }
+
+    @Test
+    void flashedReasonStaysVisibleOnClosedTicket() throws Exception {
+        moveTo(TicketStatus.CLOSED);
+
+        String html = pageWithFlashedReason("Duplicate of #12");
+
+        assertThat(html).contains(">Duplicate of #12</textarea>");
+        assertThat(html).doesNotContain("Agent tools");
+    }
+
+    @Test
+    void newTicketShowsFlashedReasonOnlyInTheForm() throws Exception {
+        String html = pageWithFlashedReason("Duplicate of #12");
+
+        assertThat(html).contains("name=\"reason\"", ">Duplicate of #12</textarea>");
+        assertThat(html).doesNotContain("unsaved-reason");
     }
 
     @Test

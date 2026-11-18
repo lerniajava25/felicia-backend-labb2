@@ -474,6 +474,7 @@ main:has(> .ticket) { max-width: 46rem; }
 .ticket-meta dt { color: var(--color-muted); }
 .ticket-meta dd { margin: 0; }
 .ticket-unassigned { color: var(--color-muted); }
+.reason-recovery { margin-bottom: var(--space-4); }
 /* Same hairline and spacing as the description, so facts, tools and text read as three parts */
 .agent-tools {
     margin: 0 0 var(--space-4);
