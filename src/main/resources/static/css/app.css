@@ -1,53 +1,53 @@
 /* ==========================================================
-   Helpdesk stylesheet: plain CSS, no framework.
+   Helpdesk stylesheet
    ========================================================== */
 
 :root {
     /* Surfaces: grey page, lighter card, near-white fields */
-    --color-bg: #ffffff;              /* page background */
-    --color-surface: #f6f6f6;         /* cards, tables */
-    --color-field: #fdfdfd;           /* input fields, secondary buttons */
+    --color-bg: #ffffff;
+    --color-surface: #f6f6f6;
+    --color-field: #fdfdfd;
 
     /* Text */
-    --color-text: #1f2328;            /* body text, text on buttons */
-    --color-muted: #5c6166;           /* small labels ("Username"), table headers */
-    --color-placeholder: #6b6f73;     /* example text inside empty fields */
+    --color-text: #1f2328;
+    --color-muted: #5c6166;
+    --color-placeholder: #6b6f73;
 
     /* Palette: teal = primary */
-    --color-primary: #5acfc9;         /* primary buttons */
-    --color-primary-hover: #3fb8b1;   /* a bit darker when hovering */
-    --color-primary-active: #2fa49d;  /* darker still while pressed */
-    --color-link: #17635f;            /* dark teal: light teal is unreadable as text */
+    --color-primary: #5acfc9;
+    --color-primary-hover: #3fb8b1;
+    --color-primary-active: #2fa49d;
+    --color-link: #17635f;
     --color-link-hover: #0f4744;
-    --color-focus: #17635f;           /* keyboard focus outline, >= 3:1 */
+    --color-focus: #17635f;
 
     /* Nav bar */
     --color-nav-bg: #000000;
-    --color-nav-text: #ffffff;        /* 21:1 on black; also the focus outline inside the nav */
+    --color-nav-text: #ffffff;
 
     /* Messages: coloured text straight on the page */
-    --color-error: #9b2c1f;           /* about 6.6:1 on the grey page */
-    --color-info: #2b5e20;            /* about 6.5:1 on the grey page */
+    --color-error: #9b2c1f;
+    --color-info: #2b5e20;
 
     /* Lines */
     --color-border: #d6d6d6;          /* decorative lines (table rows) */
-    --color-field-border: #858585;    /* field edge, >= 3:1; "transparent" = borderless */
+    --color-field-border: #858585;
 
     /* Font */
     --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     --line-height: 1.5;
 
     /* Spacing scale and shape */
-    /* 8px grid: every space and shape is a multiple of 8px (1rem = 16px) */
-    --space-2: 0.5rem;                /* 8px */
-    --space-3: 1rem;                  /* 16px */
-    --space-4: 2rem;                  /* 32px */
-    --space-5: 3rem;                  /* 48px */
-    --radius: 16px;                   /* cards, textarea, table */
-    /* Soft shadow that lifts a box off the page: a tight one all around + a wide one below */
+    /* (1rem = 16px) */
+    --space-2: 0.5rem;
+    --space-3: 1rem;
+    --space-4: 2rem;
+    --space-5: 3rem;
+    --radius: 16px;
+    /* Soft shadow under box: a tight one all around + a wide one below */
     --shadow: 0 0 8px rgb(0 0 0 / 0.06), 0 8px 32px rgb(0 0 0 / 0.12);
-    --radius-pill: 999px;             /* "fully round": renders as half the height, 24px on a 48px control */
-    --max-width: 60rem;               /* width of the main column */
+    --radius-pill: 999px;
+    --max-width: 60rem;
 }
 
 /* ---------- Reset ---------- */
@@ -70,7 +70,6 @@ h2 { font-size: 1.375rem; font-weight: 600; }
 h3 { font-size: 1.125rem; }
 p { margin: 0 0 var(--space-3); }
 
-/* Smaller heading under the main one, e.g. "Sign in" under "Helpdesk" */
 .subtitle {
     font-size: 1.125rem;
     font-weight: 400;
@@ -81,7 +80,6 @@ p { margin: 0 0 var(--space-3); }
 a { color: var(--color-link); }
 a:hover { color: var(--color-link-hover); }
 
-/* Visible keyboard focus on everything that can be focused */
 :focus-visible {
     outline: 3px solid var(--color-focus);
     outline-offset: 2px;
@@ -97,7 +95,7 @@ main {
 /* ---------- Nav bar ---------- */
 .nav {
     display: flex;
-    flex-wrap: wrap;                  /* items wrap on narrow phones */
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-3);
     padding: var(--space-3) var(--space-4);
@@ -106,16 +104,15 @@ main {
 }
 .nav a { color: var(--color-nav-text); text-decoration: none; }
 .nav a:hover { text-decoration: underline; color: var(--color-nav-text); }
-/* The dark-teal focus outline is under 3:1 on black, so use white inside the nav */
 .nav :focus-visible { outline-color: var(--color-nav-text); }
 .nav-brand { font-weight: 700; font-size: 1.25rem; margin-right: auto; }
 
 /* ---------- Buttons ---------- */
 .btn {
     display: inline-flex;
-    align-items: center;              /* text centred in the 48px height */
+    align-items: center;
     justify-content: center;
-    min-height: 3.5rem;                 /* slightly bigger than fields */
+    min-height: 3.5rem;
     padding: var(--space-2) var(--space-4);
     font: inherit;
     font-weight: 600;
@@ -144,25 +141,21 @@ label {
 input, select, textarea {
     width: 100%;
     max-width: 100%;
-    min-height: 3rem;                 /* 48px: roomy, and an easy touch target */
+    min-height: 3rem;
     padding: var(--space-2) var(--space-3);
     font: inherit;
     color: var(--color-text);
-    background: var(--color-field);   /* white pill on the grey page */
-    /* No visible edge (your choice: below WCAG 3:1 for field edges, accepted).
-       Transparent instead of 0 so high-contrast mode can still draw an edge. */
+    background: var(--color-field);
     border: 1px solid transparent;
     border-radius: var(--radius-pill);
 }
 ::placeholder { color: var(--color-placeholder); opacity: 1; }
 textarea { min-height: 6rem; resize: vertical; border-radius: var(--radius); }
 .field-error { color: var(--color-error); font-size: 0.9rem; margin: var(--space-2) 0 0; }
-/* Wider card for forms with a description; the grey card makes the borderless fields visible */
 .form-card { max-width: 40rem; }
-.form-actions { display: flex; gap: var(--space-2); }   /* buttons side by side, 8px apart */
+.form-actions { display: flex; gap: var(--space-2); }
 
 /* ---------- Messages ---------- */
-/* Plain coloured text, no box; lines up with the fields */
 .msg {
     display: flex;
     align-items: flex-start;
@@ -170,25 +163,23 @@ textarea { min-height: 6rem; resize: vertical; border-radius: var(--radius); }
     padding: var(--space-2) 0;
     margin-bottom: var(--space-3);
 }
-/* Icon before the text. The SVG is only a stencil (mask); the colour comes from
-   currentColor, so it always matches the text. content: "" = screen readers skip it,
-   the text already says what kind of message it is. */
+/* Icon before the text.Colour comes from currentColor */
 .msg::before {
     content: "";
     flex: none;
-    width: 1.5rem;                    /* 24px = one line of text (16px x 1.5 line-height) */
+    width: 1.5rem;
     height: 1.5rem;
     background-color: currentColor;
     mask: var(--msg-icon) center / contain no-repeat;
 }
 .msg-error {
     color: var(--color-error);
-    /* Filled warning triangle with the "!" cut out */
+    /* Filled warning triangle with the "!"*/
     --msg-icon: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill-rule='evenodd' d='M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z M11 9h2v5h-2z M11 16h2v2h-2z'/></svg>");
 }
 .msg-info {
     color: var(--color-info);
-    /* Filled circle with the "i" cut out */
+    /* Filled circle with the "i" */
     --msg-icon: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill-rule='evenodd' d='M2 12a10 10 0 1 0 20 0a10 10 0 1 0-20 0z M11 10h2v7h-2z M11 6.5h2v2h-2z'/></svg>");
 }
 
@@ -253,16 +244,15 @@ th { color: var(--color-muted); font-size: 0.9rem; font-weight: 600; }
 }
 .ticket-card {
     display: flex;
-    flex-direction: column;           /* title on top, time on its own line below */
+    flex-direction: column;
     padding: var(--space-2) var(--space-3);
     background: var(--color-bg);
-    border-radius: var(--space-2);    /* 8px */
+    border-radius: var(--space-2);
     box-shadow: var(--shadow);
 }
 .ticket-time { color: var(--color-muted); font-size: 0.85rem; }
 
 /* ---------- Login page ---------- */
-/* :has() = "a body that contains a login card", so this layout only applies to the login page */
 body:has(.login-card) {
     display: flex;
     flex-direction: column;
@@ -271,54 +261,47 @@ body:has(.login-card) {
 body:has(.login-card) main {
     flex: 1;                          /* main fills the space below the nav */
     display: grid;
-    place-items: center;              /* card sits in the middle */
+    place-items: center;
     width: 100%;
-    /* Extra space at the bottom lifts the card: (128px - 32px top) / 2 = 48px above true centre.
-       Slightly above centre looks more balanced to the eye than exact centre. */
     padding-bottom: 8rem;
 }
 .login-card {
     width: 100%;
     margin: 0;                        /* the grid centres it now */
-    max-width: 432px;                 /* fields stay 336px + 2 x 48px padding (54 x 8px) */
+    max-width: 432px;
     padding: var(--space-5);
-    background: var(--color-field);   /* white card on the grey page */
-    border-radius: var(--radius);     /* 16px */
-    box-shadow: var(--shadow);        /* lifts the card so it stands out from the page */
+    background: var(--color-field);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
 }
-/* Inside the white card the fields swap colours: grey fill, like Apple's forms */
+/* Inside the white card the fields swap colours */
 .login-card input { background: var(--color-bg); }
-/* The normal placeholder grey is only about 4.3:1 on this fill (below AA),
-   so use the slightly darker muted grey: about 5.3:1 */
 .login-card input::placeholder { color: var(--color-muted); }
 .login-title {
     margin-bottom: var(--space-2);
     font-size: 2.25rem;
-    font-weight: 500;                 /* calm, not bold */
+    font-weight: 500;
     letter-spacing: -0.01em;
-    /* Lift only the heading 16px. A relative offset moves it visually without changing the
-       box's height, so the fields and button stay exactly where they are. */
     position: relative;
     top: calc(-1 * var(--space-3));
 }
-.login-form .btn { margin-top: var(--space-4); }  /* 32px gap between the password field and the button */
+.login-form .btn { margin-top: var(--space-4); }
 .nav-user {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-2);              /* 8px between icon and name */
+    gap: var(--space-2);
     color: var(--color-nav-text);
 }
-/* Person icon before the name: same stencil (mask) technique as the message icons,
-   coloured with currentColor. Decorative, so screen readers skip it. */
+/* Person icon before the name */
 .nav-user::before {
     content: "";
     flex: none;
-    width: 1.5rem;                    /* 24px */
+    width: 1.5rem;
     height: 1.5rem;
     background-color: currentColor;
     mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='8' r='4'/><path d='M4 20a8 8 0 0 1 16 0z'/></svg>") center / contain no-repeat;
 }
-.nav-logout { margin: 0 0 0 var(--space-3); }  /* 16px extra + the nav's 16px gap = 32px after the name */
+.nav-logout { margin: 0 0 0 var(--space-3); }
 .nav-logout-button {
     font: inherit;
     color: var(--color-nav-text);
@@ -328,3 +311,305 @@ body:has(.login-card) main {
     cursor: pointer;
     text-decoration: underline;
 }
+
+/* ==========================================================
+   Ticket pages.
+   ========================================================== */
+
+/* ---------- Colours and font: redefine the variables for these pages ---------- */
+body:not(:has(.login-card)) {
+    --color-bg: #f5f5f7;
+    --color-surface: #ffffff;
+    --color-field: #f5f5f7;
+    --color-text: #1d1d1f;
+    --color-muted: #6e6e73;           /* about 4.6:1 on the grey page, 5:1 on white */
+    --color-placeholder: #6e6e73;
+    --color-border: #e5e5ea;
+    --color-nav-bg: rgb(255 255 255 / 0.8);
+    --color-nav-text: #1d1d1f;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, "Segoe UI", Roboto, sans-serif;
+    --radius: 18px;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 4px 16px rgb(0 0 0 / 0.06);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Headings: large, tight, calm ---------- */
+body:not(:has(.login-card)) h1 {
+    font-size: clamp(2rem, 5vw, 2.5rem);
+    font-weight: 600;
+    letter-spacing: -0.022em;
+    margin-bottom: var(--space-4);
+}
+body:not(:has(.login-card)) h2 { font-size: 1.5rem; letter-spacing: -0.015em; }
+body:not(:has(.login-card)) main { padding-top: var(--space-5); padding-bottom: var(--space-5); }
+body:not(:has(.login-card)) a { text-decoration: none; }
+body:not(:has(.login-card)) main a:hover { text-decoration: underline; }
+
+/* ---------- Nav: light, see-through, stays at the top ---------- */
+body:not(:has(.login-card)) .nav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    gap: var(--space-4);
+    padding: 0.75rem var(--space-4);
+    font-size: 0.9rem;
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--color-border);
+}
+body:not(:has(.login-card)) .nav-brand { font-size: 1.1rem; font-weight: 600; letter-spacing: -0.01em; }
+body:not(:has(.login-card)) .nav a:hover { text-decoration: none; opacity: 0.65; }
+body:not(:has(.login-card)) .nav-role { color: var(--color-muted); }
+/* Profile icon */
+.nav-user::before {
+    width: 1.5rem;
+    height: 1.5rem;
+    mask: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><clipPath id='c'><circle cx='12' cy='12' r='9.6'/></clipPath><path fill-rule='evenodd' d='M12 1a11 11 0 1 0 0 22a11 11 0 1 0 0-22z M12 2.4a9.6 9.6 0 1 1 0 19.2a9.6 9.6 0 1 1 0-19.2z'/><circle cx='12' cy='9.4' r='3.5'/><ellipse cx='12' cy='20.6' rx='7.4' ry='5.6' clip-path='url(%23c)'/></svg>") center / contain no-repeat;
+}
+body:not(:has(.login-card)) .nav-logout { margin-left: 0; }
+body:not(:has(.login-card)) .nav-logout-button {
+    padding: 0.375rem 0.875rem;
+    text-decoration: none;
+    border: 1px solid #c7c7cc;
+    border-radius: var(--radius-pill);
+}
+body:not(:has(.login-card)) .nav-logout-button:hover { background: rgb(0 0 0 / 0.05); }
+
+/* ---------- Buttons and fields: a little smaller than on the login page ---------- */
+body:not(:has(.login-card)) .btn {
+    min-height: 2.75rem;
+    padding: var(--space-2) 1.5rem;
+    font-weight: 500;
+}
+body:not(:has(.login-card)) input,
+body:not(:has(.login-card)) select,
+body:not(:has(.login-card)) textarea {
+    min-height: 2.75rem;
+    border-radius: 12px;
+}
+body:not(:has(.login-card)) textarea { min-height: 7rem; padding-top: 0.75rem; }
+body:not(:has(.login-card)) label { font-size: 0.9rem; font-weight: 500; color: var(--color-text); }
+
+/* ---------- Cards and forms ---------- */
+.form-card {
+    max-width: none;
+    margin: 0;
+    padding: var(--space-4);
+    box-shadow: var(--shadow);
+}
+main:has(> .form-card) { max-width: 42rem; }           /* "New ticket": heading lines up with the card */
+.form-actions { margin-top: var(--space-4); }
+
+/* ---------- Status colours: one pair per status ---------- */
+.status-new              { --status-bg: #e8f0fe; --status-fg: #1a4fa0; }
+.status-in-progress      { --status-bg: #fff3d1; --status-fg: #7a5200; }
+.status-waiting-for-user { --status-bg: #f3e8fd; --status-fg: #6a2c91; }
+.status-resolved         { --status-bg: #e3f5e1; --status-fg: #1f5c1a; }
+.status-closed           { --status-bg: #ececee; --status-fg: #48484d; }
+/* The status as a small pill on the details page */
+.status {
+    display: inline-block;
+    padding: 0.125rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--status-fg);
+    background: var(--status-bg);
+    border-radius: var(--radius-pill);
+    justify-self: start;              /* in the details grid: as wide as its text, not the whole column */
+}
+
+/* ---------- Board ---------- */
+main:has(.board) { max-width: 80rem; }                 /* five columns need more room */
+.board { align-items: start; padding: var(--space-2) var(--space-2) var(--space-3); margin: 0 calc(-1 * var(--space-2)); }
+.board-column { box-shadow: var(--shadow); }
+/* Two classes, so this wins over the general h2 size above */
+.board .board-column-title { align-items: center; font-size: 0.95rem; font-weight: 600; letter-spacing: 0; }
+/* Coloured dot before the column name */
+.board-column-title > span:first-child::before {
+    content: "";
+    display: inline-block;
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-right: var(--space-2);
+    vertical-align: 0.1em;
+    background: var(--status-fg);
+    border-radius: 50%;
+}
+.board-count {
+    min-width: 1.5rem;
+    padding: 0 var(--space-2);
+    font-size: 0.8rem;
+    text-align: center;
+    background: var(--color-bg);
+    border-radius: var(--radius-pill);
+}
+.ticket-card {
+    gap: 0.25rem;
+    padding: 0.75rem var(--space-3);
+    border-radius: 12px;
+    box-shadow: none;                 /* flat grey tile inside the white column */
+    transition: background 0.15s;
+}
+.ticket-card:hover { background: #ececf0; }
+.ticket-title { color: var(--color-text); font-weight: 500; }
+/* Extra lines on the agents' cards: who created it and who has it */
+.ticket-card-meta { font-size: 0.85rem; }
+
+/* ---------- Ticket details ---------- */
+main:has(> .ticket) { max-width: 46rem; }
+.ticket {
+    padding: var(--space-4);
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+.ticket h1 { margin-bottom: var(--space-3); }
+.ticket-meta {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--space-2) var(--space-4);
+    margin: 0 0 var(--space-4);
+    font-size: 0.95rem;
+}
+.ticket-meta dt { color: var(--color-muted); }
+.ticket-meta dd { margin: 0; }
+.ticket-unassigned { color: var(--color-muted); }
+.reason-recovery { margin-bottom: var(--space-4); }
+/* Same hairline and spacing as the description, so facts, tools and text read as three parts */
+.agent-tools {
+    margin: 0 0 var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border);
+}
+/* "Agent tools". Two classes, so this wins over the general h2 size above */
+.ticket .ticket-section-title { font-size: 0.95rem; font-weight: 600; letter-spacing: 0; }
+.assign-form { margin: 0 0 var(--space-4); }
+/* Grid: the dropdown and the button share one row, everything else gets a full row.
+   The button is placed in row 2 explicitly, because in the HTML it comes after the
+   reason field (shown for NEW tickets only). */
+.status-form {
+    display: grid;
+    grid-template-columns: minmax(0, 20rem) auto;   /* dropdown at most 20rem, button as wide as its text */
+    column-gap: var(--space-3);
+    align-items: center;                           /* dropdown and button line up (both 44px high) */
+    justify-content: start;
+}
+.status-form > * { grid-column: 1 / -1; }          /* default: a full row */
+.status-form select { grid-column: 1; grid-row: 2; }
+.status-form .btn { grid-column: 2; grid-row: 2; }
+.status-form textarea { margin-top: 0; }
+.status-form label[for="reason"] { margin-top: var(--space-3); }
+/* A NEW ticket also has the reason field: then the button goes last, below it,
+   so you fill in the reason before you click. Same on narrow phones, where there's
+   no room side by side. */
+.status-form:has(textarea) .btn {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
+    margin-top: var(--space-3);
+}
+@media (max-width: 30rem) {
+    .status-form { grid-template-columns: minmax(0, 1fr); }
+    .status-form .btn { grid-column: 1; grid-row: auto; justify-self: start; margin-top: var(--space-3); }
+}
+
+/* Dropdowns: our own chevron with room on the right. The browser's arrow ignores padding,
+   so appearance: none hides it and a small SVG is drawn 16px from the right edge instead. */
+body:not(:has(.login-card)) select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 2.75rem;                        /* text never runs under the chevron */
+    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'><path d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%236e6e73' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    background-size: 0.75rem;
+    cursor: pointer;
+}
+/* The hairline sits on the section, so it runs above the heading, not between heading and text */
+.ticket-description-section {
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--color-border);
+}
+.ticket-description { margin: 0; }
+
+/* ---------- Comments ---------- */
+.ticket-comments { margin-top: var(--space-5); }
+.comments-card {
+    margin: 0 0 var(--space-3);
+    padding: var(--space-4);
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+.comment-list { list-style: none; margin: 0; padding: 0; }
+.comment { padding: var(--space-3) 0; }
+/* The card's padding already gives room at the edges */
+.comment:first-child { padding-top: 0; }
+.comment:last-child { padding-bottom: 0; }
+.comments-empty { margin: 0; }
+.comment + .comment { border-top: 1px solid var(--color-border); }
+.comment-header { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-2); margin-bottom: 0.25rem; }
+.comment-time { color: var(--color-muted); font-size: 0.85rem; }
+.comment-body { margin: 0; }
+.comment-form { max-width: none; }
+.comment-form .form-actions { margin-top: var(--space-3); }
+
+/* ---------- Tables (for the agent and admin lists) ---------- */
+body:not(:has(.login-card)) table {
+    border-collapse: separate;        /* needed for rounded corners */
+    border-spacing: 0;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+body:not(:has(.login-card)) th,
+body:not(:has(.login-card)) td { padding: 0.75rem var(--space-3); }
+body:not(:has(.login-card)) th { font-size: 0.8rem; font-weight: 500; }
+body:not(:has(.login-card)) tr:last-child td { border-bottom: 0; }
+body:not(:has(.login-card)) tbody tr:hover { background: #fafafc; }
+
+/* ==========================================================
+   Login page.
+   ========================================================== */
+
+/* Same colours, font and shadow as the other pages */
+body:has(.login-card) {
+    --color-bg: #f5f5f7;
+    --color-surface: #ffffff;
+    --color-field: #f5f5f7;
+    --color-text: #1d1d1f;
+    --color-muted: #6e6e73;
+    --color-border: #e5e5ea;
+    --color-nav-bg: rgb(255 255 255 / 0.8);
+    --color-nav-text: #1d1d1f;
+    --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, "Segoe UI", Roboto, sans-serif;
+    --radius: 18px;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 4px 16px rgb(0 0 0 / 0.06);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Same light nav bar; on this page it only holds the "Helpdesk" brand */
+body:has(.login-card) .nav {
+    padding: 0.75rem var(--space-4);
+    font-size: 0.9rem;
+    border-bottom: 1px solid var(--color-border);
+}
+body:has(.login-card) .nav-brand { font-size: 1.1rem; font-weight: 600; letter-spacing: -0.01em; }
+body:has(.login-card) .nav a:hover { text-decoration: none; opacity: 0.65; }
+
+.login-card {
+    max-width: 400px;
+    padding: var(--space-5) var(--space-4);
+    background: var(--color-surface);
+}
+.login-title {
+    position: static;
+    margin-bottom: var(--space-4);
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.022em;
+}
+.login-card label { font-size: 0.9rem; font-weight: 500; color: var(--color-text); }
+.login-card input { border-radius: 12px; }
+.login-card .msg { font-size: 0.95rem; }
+.login-form .btn { min-height: 3rem; font-weight: 500; }

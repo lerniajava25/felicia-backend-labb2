@@ -1,11 +1,27 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/layout :: head(|${ticket.title} · Helpdesk|)}"></head>
 <body>
 <div th:replace="~{fragments/nav :: nav}"></div>
 
 <main>
-    <p><a th:href="@{/tickets}">← My tickets</a></p>
+    <p>
+        <a th:href="@{/tickets}">← My tickets</a>
+        <a sec:authorize="hasRole('AGENT')" th:href="@{/agent/tickets}">← All tickets</a>
+    </p>
+
+    <!-- Flash messages: set before a redirect, shown once, then gone. -->
+    <p th:if="${message}" class="msg msg-info" role="status" th:text="${message}">Done</p>
+    <p th:if="${error}" class="msg msg-error" role="alert" th:text="${error}">Error</p>
+
+    <!-- The ticket left NEW while the agent's reason was being refused (someone else moved it),
+         so the reason field is gone. Show the text read-only so it can be copied; it is in no
+         form and has no name, so it can't change the ticket. -->
+    <div th:if="${reason != null and ticket.status.name() != 'NEW'}" class="reason-recovery">
+        <label for="unsaved-reason">Your reason was not used, because the ticket changed. Copy it if you still need it:</label>
+        <textarea id="unsaved-reason" readonly rows="3" th:text="${reason}"></textarea>
+    </div>
 
     <article class="ticket">
         <h1 th:text="${ticket.title}">Title</h1>
@@ -15,7 +31,7 @@
             <!-- IN_PROGRESS becomes "status status-in-progress", same as the list -->
             <dd th:with="slug=${ticket.status.name().toLowerCase().replace('_', '-')}"
                 th:class="${'status status-' + slug}"
-                th:text="${ticket.status}">NEW</dd>
+                th:text="${ticket.status.label()}">New</dd>
             <dt>Created by</dt>
             <dd th:text="${ticket.createdBy}">Name</dd>
             <dt>Assigned to</dt>
@@ -27,22 +43,68 @@
             <dd th:text="${ticket.lastModified}">2026-01-01 12:00</dd>
         </dl>
 
-        <!-- white-space: pre-line in app.css keeps the user's line breaks -->
-        <p class="ticket-description" th:text="${ticket.description}">Description</p>
+        <!-- Only hides the buttons. The /agent/** URL rule and @PreAuthorize do the real check.
+             The version lets the server notice if someone changed the ticket meanwhile.
+             Not shown for CLOSED: both forms are hidden then, so the heading would stand alone. -->
+        <section sec:authorize="hasRole('AGENT')" th:unless="${ticket.status.name() == 'CLOSED'}"
+                 class="agent-tools" aria-labelledby="agent-tools-title">
+            <h2 id="agent-tools-title" class="ticket-section-title">Agent tools</h2>
+            <!-- Hidden when the ticket is already yours; "Take over" when another agent has it.
+                 Only the label changes: the service allows both and checks role, version and CLOSED. -->
+            <form th:unless="${ticket.status.name() == 'CLOSED'
+                               or ticket.assigneeId == #authentication.principal.id}"
+                  th:action="@{/agent/tickets/{id}/assign(id=${ticket.id})}" method="post" class="assign-form">
+                <input type="hidden" name="version" th:value="${ticket.version}">
+                <button type="submit" class="btn btn-secondary"
+                        th:text="${ticket.assigneeId == null} ? 'Assign to me' : 'Take over'">Assign to me</button>
+            </form>
+
+            <!-- Only the moves TicketStatus.canMoveTo allows; the service checks them again.
+                 No form at all when nothing is allowed (a CLOSED ticket). -->
+            <form th:unless="${ticket.allowedMoves.isEmpty()}"
+                  th:action="@{/agent/tickets/{id}/status(id=${ticket.id})}" method="post" class="status-form">
+                <input type="hidden" name="version" th:value="${ticket.version}">
+                <label for="status">New status</label>
+                <select id="status" name="status">
+                    <!-- selectedStatus: the flash after a too-long reason. Only allowed moves
+                         have an option, so a move that's no longer allowed selects nothing. -->
+                    <option th:each="move : ${ticket.allowedMoves}"
+                            th:value="${move.name()}" th:selected="${move == selectedStatus}"
+                            th:text="${move.label()}">In progress</option>
+                </select>
+                <!-- Only a NEW ticket needs a reason to be closed. Not "required": In progress
+                     needs none. The service checks it. No maxlength, same as the comment form
+                     (a line break counts 1 but is sent as 2); a too-long reason comes back
+                     as the flash "reason", so the agent can shorten it instead of retyping. -->
+                <th:block th:if="${ticket.status.name() == 'NEW'}">
+                    <label for="reason">Reason (needed to close)</label>
+                    <textarea id="reason" name="reason" rows="2" th:text="${reason}"></textarea>
+                </th:block>
+                <button type="submit" class="btn btn-secondary">Change status</button>
+            </form>
+        </section>
+
+        <section class="ticket-description-section" aria-labelledby="description-title">
+            <h2 id="description-title">Description</h2>
+            <!-- white-space: pre-line in app.css keeps the user's line breaks -->
+            <p class="ticket-description" th:text="${ticket.description}">Description</p>
+        </section>
     </article>
 
     <section class="ticket-comments">
-        <h2>Comments</h2>
-        <p th:if="${ticket.comments.isEmpty()}">No comments yet.</p>
-        <ol th:unless="${ticket.comments.isEmpty()}" class="comment-list">
-            <li th:each="comment : ${ticket.comments}" class="comment">
-                <p class="comment-header">
-                    <strong th:text="${comment.author}">Name</strong>
-                    <span class="comment-time" th:text="${comment.created}">2026-01-01 12:00</span>
-                </p>
-                <p class="comment-body" th:text="${comment.body}">Comment</p>
-            </li>
-        </ol>
+        <div class="comments-card">
+            <h2>Comments</h2>
+            <p th:if="${ticket.comments.isEmpty()}" class="comments-empty">No comments yet.</p>
+            <ol th:unless="${ticket.comments.isEmpty()}" class="comment-list">
+                <li th:each="comment : ${ticket.comments}" class="comment">
+                    <p class="comment-header">
+                        <strong th:text="${comment.author}">Name</strong>
+                        <span class="comment-time" th:text="${comment.created}">2026-01-01 12:00</span>
+                    </p>
+                    <p class="comment-body" th:text="${comment.body}">Comment</p>
+                </li>
+            </ol>
+        </div>
 
         <!-- th:action adds the hidden CSRF token. No maxlength: browsers count a line
              break as 1 character but send 2 (\r\n); the server checks the length. -->

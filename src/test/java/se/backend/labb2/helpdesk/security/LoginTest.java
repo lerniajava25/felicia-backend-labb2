@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.stringContainsInOrder;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -38,6 +39,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class LoginTest {
 
     private static final String TEST_PASSWORD = "made-up-test-password";
+
+    // The closing quote matters: "/tickets/new" must not count as the "/tickets" link.
+    private static final String MY_TICKETS_LINK = "href=\"/tickets\"";
+    private static final String NEW_TICKET_LINK = "href=\"/tickets/new\"";
+    private static final String ASSIGNED_LINK = "href=\"/agent/tickets/mine\"";
+    private static final String ALL_TICKETS_LINK = "href=\"/agent/tickets\"";
 
     @Autowired
     private MockMvc mockMvc;
@@ -119,28 +126,47 @@ class LoginTest {
                 .andExpect(content().string(allOf(
                         containsString("Billy Test"),
                         containsString("(user)"),
-                        containsString("href=\"/tickets\""))))
+                        containsString(MY_TICKETS_LINK),
+                        containsString(NEW_TICKET_LINK))))
                 .andExpect(content().string(not(containsString("(agent)"))))
-                .andExpect(content().string(not(containsString("(admin)"))));
+                .andExpect(content().string(not(containsString("(admin)"))))
+                .andExpect(content().string(not(containsString(ASSIGNED_LINK))))
+                .andExpect(content().string(not(containsString(ALL_TICKETS_LINK))));
     }
 
     @Test
-    void navForAgentShowsOnlyAgentRole() throws Exception {
+    void navForAgentShowsOnlyAgentRoleAndAgentLinks() throws Exception {
         CurrentUser agent = new CurrentUser(99L, "agent", "unused-hash", "Agent Test", Role.AGENT, true);
 
         mockMvc.perform(get("/").with(user(agent)))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("(agent)")))
+                .andExpect(content().string(stringContainsInOrder(
+                        ALL_TICKETS_LINK, ASSIGNED_LINK, NEW_TICKET_LINK)))
                 .andExpect(content().string(not(containsString("(admin)"))))
-                .andExpect(content().string(not(containsString("(user)"))));
+                .andExpect(content().string(not(containsString("(user)"))))
+                .andExpect(content().string(not(containsString(MY_TICKETS_LINK))));
     }
 
     @Test
-    void navForAdminShowsOnlyAdminRole() throws Exception {
+    void navForAdminShowsOnlyAdminRoleAndAgentLinks() throws Exception {
         mockMvc.perform(get("/").with(user(CurrentUser.from(admin))))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("(admin)")))
+                .andExpect(content().string(allOf(
+                        containsString("(admin)"),
+                        containsString(ASSIGNED_LINK),
+                        containsString(ALL_TICKETS_LINK))))
                 .andExpect(content().string(not(containsString("(agent)"))))
-                .andExpect(content().string(not(containsString("(user)"))));
+                .andExpect(content().string(not(containsString("(user)"))))
+                .andExpect(content().string(not(containsString(MY_TICKETS_LINK))));
+    }
+
+    @Test
+    void navForAnonymousHasNoTicketLinks() throws Exception {
+        // !hasRole('AGENT') is also true when logged out; "isAuthenticated() and" stops that.
+        mockMvc.perform(get("/login"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString(MY_TICKETS_LINK))))
+                .andExpect(content().string(not(containsString(ASSIGNED_LINK))));
     }
 }

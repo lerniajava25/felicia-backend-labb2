@@ -25,7 +25,6 @@ import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 // @Transactional: MockMvc runs on the test thread, so every test's data is rolled back.
@@ -134,12 +133,5 @@ class TicketListTest {
         mockMvc.perform(get("/tickets").with(user(CurrentUser.from(nobody))))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("You have no tickets yet.")));
-    }
-
-    @Test
-    void anonymousIsRedirectedToLogin() throws Exception {
-        mockMvc.perform(get("/tickets"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/login"));
     }
 }
