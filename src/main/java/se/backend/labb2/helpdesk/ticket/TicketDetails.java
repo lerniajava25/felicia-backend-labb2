@@ -10,6 +10,7 @@ import java.util.List;
  *
  * @param version  sent back by forms that change the ticket, to detect someone else's change
  * @param assignee the assignee's display name, or null when nobody is assigned
+ * @param assigneeId the assignee's user id, or null; lets the page compare it with the logged-in user
  * @param allowedMoves the statuses this ticket may move to now (empty for CLOSED), built by the service
  */
 public record TicketDetails(Long id,
@@ -19,6 +20,7 @@ public record TicketDetails(Long id,
                             TicketStatus status,
                             String createdBy,
                             String assignee,
+                            Long assigneeId,
                             String created,
                             String lastModified,
                             List<CommentView> comments,
@@ -33,6 +35,7 @@ public record TicketDetails(Long id,
                 ticket.getStatus(),
                 ticket.getCreatedBy().getDisplayName(),
                 ticket.getAssignee() == null ? null : ticket.getAssignee().getDisplayName(),
+                ticket.getAssignee() == null ? null : ticket.getAssignee().getId(),
                 DateTimes.format(ticket.getCreatedAt()),
                 DateTimes.format(ticket.getLastModified()),
                 comments.stream().map(CommentView::from).toList(),

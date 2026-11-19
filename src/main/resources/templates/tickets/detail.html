@@ -49,10 +49,14 @@
         <section sec:authorize="hasRole('AGENT')" th:unless="${ticket.status.name() == 'CLOSED'}"
                  class="agent-tools" aria-labelledby="agent-tools-title">
             <h2 id="agent-tools-title" class="ticket-section-title">Agent tools</h2>
-            <form th:unless="${ticket.status.name() == 'CLOSED'}"
+            <!-- Hidden when the ticket is already yours; "Take over" when another agent has it.
+                 Only the label changes: the service allows both and checks role, version and CLOSED. -->
+            <form th:unless="${ticket.status.name() == 'CLOSED'
+                               or ticket.assigneeId == #authentication.principal.id}"
                   th:action="@{/agent/tickets/{id}/assign(id=${ticket.id})}" method="post" class="assign-form">
                 <input type="hidden" name="version" th:value="${ticket.version}">
-                <button type="submit" class="btn btn-secondary">Assign to me</button>
+                <button type="submit" class="btn btn-secondary"
+                        th:text="${ticket.assigneeId == null} ? 'Assign to me' : 'Take over'">Assign to me</button>
             </form>
 
             <!-- Only the moves TicketStatus.canMoveTo allows; the service checks them again.

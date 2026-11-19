@@ -50,6 +50,7 @@ class AssignTicketTest {
 
     private User billy;
     private User pippi;
+    private User tommy;
     private User admin;
     private Ticket ticket;
 
@@ -58,6 +59,7 @@ class AssignTicketTest {
         String hash = passwordEncoder.encode(TEST_PASSWORD);
         billy = userRepository.save(new User("billy", hash, "Billy Test", Role.USER));
         pippi = userRepository.save(new User("pippi", hash, "Pippi Test", Role.AGENT));
+        tommy = userRepository.save(new User("tommy", hash, "Tommy Test", Role.AGENT));
         admin = userRepository.save(new User("admin", hash, "Admin Test", Role.ADMIN));
 
         ticket = ticketRepository.saveAndFlush(new Ticket("Billy printer jam", "Paper everywhere", billy));
@@ -145,6 +147,51 @@ class AssignTicketTest {
         // Make sure the test would see the button if it were there.
         mockMvc.perform(get("/tickets/{id}", ticket.getId()).with(user(CurrentUser.from(pippi))))
                 .andExpect(content().string(containsString("Assign to me")));
+    }
+
+    // The button markup, not just the words: HTML comments in the template reach the page too.
+    private static final String ASSIGN_BUTTON = ">Assign to me</button>";
+    private static final String TAKE_OVER_BUTTON = ">Take over</button>";
+
+    /** The ticket as an agent sees it once pippi has it. */
+    private String pageAfterPippiTookIt(User viewer) throws Exception {
+        ticket.assignTo(pippi);
+        ticket.changeStatus(TicketStatus.IN_PROGRESS);
+        ticketRepository.flush();
+        return mockMvc.perform(get("/tickets/{id}", ticket.getId()).with(user(CurrentUser.from(viewer))))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+    }
+
+    @Test
+    void assigneeSeesNoAssignButton() throws Exception {
+        String html = pageAfterPippiTookIt(pippi);
+
+        assertThat(html).doesNotContain(ASSIGN_BUTTON, TAKE_OVER_BUTTON);
+        assertThat(html).contains("Change status");   // the agent tools are still there
+    }
+
+    @Test
+    void otherAgentSeesTakeOver() throws Exception {
+        String html = pageAfterPippiTookIt(tommy);
+
+        assertThat(html).contains(TAKE_OVER_BUTTON);
+        assertThat(html).doesNotContain(ASSIGN_BUTTON);
+    }
+
+    @Test
+    void takeOverStillWorksOnTheServer() throws Exception {
+        ticket.assignTo(pippi);
+        ticketRepository.flush();
+
+        mockMvc.perform(post("/agent/tickets/{id}/assign", ticket.getId())
+                        .param("version", ticket.getVersion().toString())
+                        .with(user(CurrentUser.from(tommy)))
+                        .with(csrf()))
+                .andExpect(redirectedUrl("/tickets/" + ticket.getId()))
+                .andExpect(flash().attribute("message", AgentTicketController.ASSIGNED_MESSAGE));
+
+        assertThat(ticket.getAssignee().getId()).isEqualTo(tommy.getId());
     }
 
     @Test
