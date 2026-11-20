@@ -84,12 +84,17 @@ public class UserAdminService {
         }
         // Someone must always be able to manage users. Only matters when this user is an
         // enabled admin today and would stop being one.
-        // Known limit: two admins demoting each other at the same moment can both see two
-        // enabled admins here. Closing that needs a lock on the admin rows.
         boolean losesAdmin = user.getRole() == Role.ADMIN && Boolean.TRUE.equals(user.getEnabled())
                 && (form.getRole() != Role.ADMIN || !form.getEnabled());
-        if (losesAdmin && userRepository.countByRoleAndEnabledTrue(Role.ADMIN) <= 1) {
-            throw new RuleViolationException(LAST_ADMIN_MESSAGE);
+        if (losesAdmin) {
+            // One at a time: lock every enabled admin row (the same rows for every demotion,
+            // since this user is one of them) and count after the lock. A plain count is not
+            // enough: two admins demoting each other at the same moment would both see two
+            // admins. With the lock the second one waits here, then sees the first one's
+            // change and is refused. The lock lasts until this transaction commits.
+            if (userRepository.findAndLockEnabledByRole(Role.ADMIN).size() <= 1) {
+                throw new RuleViolationException(LAST_ADMIN_MESSAGE);
+            }
         }
         user.changeRole(form.getRole());
         user.setEnabled(form.getEnabled());

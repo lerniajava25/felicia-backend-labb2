@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('No access · Helpdesk')}"></head>
+<body>
+<div th:replace="~{fragments/nav :: nav}"></div>
+
+<main>
+    <!-- Only the status code, which Spring Boot puts in the model; no path or error details. -->
+    <h1>You don't have access to this page</h1>
+    <p><small th:text="|Error ${status}|">Error code</small></p>
+    <p><a th:href="@{/}">Back to the start page</a></p>
+</main>
+</body>
+</html>
