@@ -466,6 +466,35 @@ main:has(.board) { max-width: 80rem; }                 /* five columns need more
 /* Extra lines on the agents' cards: who created it and who has it */
 .ticket-card-meta { font-size: 0.85rem; }
 
+/* ---------- Home page ---------- */
+/* Heading and buttons just above the middle of the screen. The area fills the screen below
+   the nav (100dvh minus about 10rem for the nav and main's padding); padding-bottom lifts
+   the content a little above the exact centre, which looks more balanced. */
+.home-hero {
+    min-height: calc(100dvh - 10rem);
+    /* The content is centred above this padding, so every 2rem added here lifts it 1rem. */
+    padding-bottom: calc(8vh + 4rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+/* Two classes, so this wins over the general h1 size above. Grows with the screen, up to 4.5rem. */
+.home-hero .home-title {
+    font-size: clamp(2.75rem, 8vw, 4.5rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 8rem;
+}
+/* The buttons sit centred under the heading; flex-wrap stacks them on narrow phones. */
+.home-hero .form-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    margin-top: 0;
+}
+
 /* ---------- Ticket details ---------- */
 main:has(> .ticket) { max-width: 46rem; }
 .ticket {
