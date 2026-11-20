@@ -41,25 +41,16 @@ docker compose down
 
 The development database runs in Docker and can be opened in any database tool:
 
-| Setting  | Value        |
-|----------|--------------|
-| Host     | `localhost`  |
-| Port     | `5432`       |
-| Database | `mydatabase` |
-| User     | `myuser`     |
-| Password | `secret`     |
+| Setting  | Value                                       |
+|----------|---------------------------------------------|
+| Host     | `localhost`                                 |
+| Port     | `5432`                                      |
+| Database | `mydatabase`                                |
+| User     | `myuser`                                    |
+| Password | see `POSTGRES_PASSWORD` in `compose.yaml`   |
 
-These are local development values from `compose.yaml`, not real credentials. The port is
-bound to `127.0.0.1` only, so the database can't be reached from other computers.
-
-### Tests
-
-Run the tests (Testcontainers starts its own PostgreSQL container, so Docker must be
-running). The tests do not need `.env`:
-
-```bash
-./mvnw test
-```
+These are local development values, not real credentials. The port is bound to
+`127.0.0.1` only, so the database can't be reached from other computers.
 
 ### Git hooks
 
@@ -87,15 +78,24 @@ Sign in at http://localhost:8080/login with a username from the table and the
 the "Log out" button in the nav bar.
 
 The password itself is never stored in the repository, and the database only holds
-bcrypt hashes of it.
+bcrypt hashes of it. Admins can create more accounts under "Manage users".
 
 ## Roles
 
-| Role  | May do                                                                                    |
-|-------|-------------------------------------------------------------------------------------------|
-| USER  | Create tickets, see their own tickets and their details, comment on their own tickets     |
-| AGENT | See all tickets and their details, assign a ticket to themselves, change status, comment  |
-| ADMIN | Everything an agent can do, plus create users, change roles and enable/disable users      |
+| Role  | May do | Where |
+|-------|--------|-------|
+| USER  | Create tickets, see their own tickets and their details, comment on their own tickets. A reply to a ticket that waits for them moves it back to "In progress". | "My tickets" (`/tickets`), "New ticket" (`/tickets/new`), a ticket (`/tickets/{id}`) |
+| AGENT | See all tickets and their details, assign a ticket to themselves or take it over from another agent, change status (closing a new ticket needs a reason), comment | "All tickets" (`/agent/tickets`), "Assigned to me" (`/agent/tickets/mine`), the agent tools on a ticket (`/tickets/{id}`) |
+| ADMIN | Everything an agent can do, plus create users, change roles and enable/disable users. An admin can't change their own account, and the last enabled admin can't be demoted or disabled. | Everything an agent has, plus "Manage users" (`/admin/users`, `/admin/users/new`, `/admin/users/{id}/edit`) |
 
 URL access is enforced in `SecurityConfig` (anything not listed is denied), with the role
 hierarchy ADMIN > AGENT > USER.
+
+## Tests
+
+Run the tests (Testcontainers starts its own PostgreSQL container, so Docker must be
+running). The tests do not need `.env`:
+
+```bash
+./mvnw test
+```
