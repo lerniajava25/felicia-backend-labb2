@@ -72,7 +72,7 @@ class TicketListTest {
 
     @Test
     void boardPutsTicketsInTheirStatusColumn() {
-        Board board = ticketService.boardFor(CurrentUser.from(billy));
+        Board<TicketRow> board = ticketService.boardFor(CurrentUser.from(billy));
 
         assertThat(board.empty()).isFalse();
         assertThat(board.columns())
@@ -109,7 +109,7 @@ class TicketListTest {
         assertThat(html).contains("action=\"/logout\"");
     }
 
-    private static List<String> titlesIn(Board board, TicketStatus status) {
+    private static List<String> titlesIn(Board<TicketRow> board, TicketStatus status) {
         return board.columns().stream()
                 .filter(column -> column.status() == status)
                 .findFirst().orElseThrow()

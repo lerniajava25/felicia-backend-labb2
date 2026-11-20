@@ -80,6 +80,13 @@ class ChangeStatusTest {
         ticketRepository.flush();
     }
 
+    /** Writes pending changes and reads the entity back from the database. */
+    private <T> T reload(T entity) {
+        entityManager.flush();
+        entityManager.refresh(entity);
+        return entity;
+    }
+
     @Test
     void inProgressToResolvedWorksAndIsSaved() throws Exception {
         moveTo(TicketStatus.IN_PROGRESS);
@@ -92,11 +99,7 @@ class ChangeStatusTest {
                 .andExpect(redirectedUrl("/tickets/" + ticket.getId()))
                 .andExpect(flash().attribute("message", AgentTicketController.STATUS_CHANGED_MESSAGE));
 
-        // Write to the database, forget the cached entity, and read it back from the database.
-        entityManager.flush();
-        entityManager.clear();
-        Ticket reloaded = ticketRepository.findById(ticket.getId()).orElseThrow();
-        assertThat(reloaded.getStatus()).isEqualTo(TicketStatus.RESOLVED);
+        assertThat(reload(ticket).getStatus()).isEqualTo(TicketStatus.RESOLVED);
     }
 
     @Test
@@ -112,8 +115,7 @@ class ChangeStatusTest {
                 .andExpect(redirectedUrl("/tickets/" + ticket.getId()))
                 .andExpect(flash().attribute("error", TicketService.STATUS_NOT_ALLOWED_MESSAGE));
 
-        ticketRepository.flush();
-        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.CLOSED);
+        assertThat(reload(ticket).getStatus()).isEqualTo(TicketStatus.CLOSED);
         assertThat(ticket.getVersion()).isEqualTo(versionBefore);
     }
 
@@ -133,7 +135,7 @@ class ChangeStatusTest {
                 .andExpect(redirectedUrl("/tickets/" + ticket.getId()))
                 .andExpect(flash().attribute("error", AgentTicketController.CONFLICT_MESSAGE));
 
-        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.IN_PROGRESS);
+        assertThat(reload(ticket).getStatus()).isEqualTo(TicketStatus.IN_PROGRESS);
 
         // The page after the redirect shows the message.
         mockMvc.perform(get("/tickets/{id}", ticket.getId())
@@ -152,7 +154,7 @@ class ChangeStatusTest {
                         .with(csrf()))
                 .andExpect(status().isForbidden());
 
-        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.NEW);
+        assertThat(reload(ticket).getStatus()).isEqualTo(TicketStatus.NEW);
     }
 
     @Test
@@ -166,7 +168,7 @@ class ChangeStatusTest {
                 .andExpect(redirectedUrl("/tickets/" + ticket.getId()))
                 .andExpect(flash().attribute("message", AgentTicketController.STATUS_CHANGED_MESSAGE));
 
-        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.CLOSED);
+        assertThat(reload(ticket).getStatus()).isEqualTo(TicketStatus.CLOSED);
     }
 
     @Test
@@ -177,7 +179,7 @@ class ChangeStatusTest {
                         .with(user(CurrentUser.from(pippi))))
                 .andExpect(status().isForbidden());
 
-        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.NEW);
+        assertThat(reload(ticket).getStatus()).isEqualTo(TicketStatus.NEW);
     }
 
     @Test
@@ -235,7 +237,7 @@ class ChangeStatusTest {
     void closingNewTicketWithoutReasonIsRefused() throws Exception {
         closeTicket(null, "error", TicketService.REASON_REQUIRED_MESSAGE);
 
-        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.NEW);
+        assertThat(reload(ticket).getStatus()).isEqualTo(TicketStatus.NEW);
         assertThat(commentsOnTicket()).isEmpty();
     }
 
@@ -243,7 +245,7 @@ class ChangeStatusTest {
     void closingNewTicketWithBlankReasonIsRefused() throws Exception {
         closeTicket("   ", "error", TicketService.REASON_REQUIRED_MESSAGE);
 
-        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.NEW);
+        assertThat(reload(ticket).getStatus()).isEqualTo(TicketStatus.NEW);
         assertThat(commentsOnTicket()).isEmpty();
     }
 
@@ -251,7 +253,7 @@ class ChangeStatusTest {
     void closingNewTicketWithReasonClosesItAndSavesTheReasonAsComment() throws Exception {
         closeTicket("  Duplicate of another ticket ", "message", AgentTicketController.STATUS_CHANGED_MESSAGE);
 
-        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.CLOSED);
+        assertThat(reload(ticket).getStatus()).isEqualTo(TicketStatus.CLOSED);
         assertThat(commentsOnTicket()).singleElement().satisfies(comment -> {
             assertThat(comment.getBody()).isEqualTo("Closed: Duplicate of another ticket");
             assertThat(comment.getAuthor().getId()).isEqualTo(pippi.getId());
@@ -273,7 +275,7 @@ class ChangeStatusTest {
                 .andExpect(flash().attribute("reason", tooLong))
                 .andExpect(flash().attribute("selectedStatus", TicketStatus.CLOSED));
 
-        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.NEW);
+        assertThat(reload(ticket).getStatus()).isEqualTo(TicketStatus.NEW);
         assertThat(commentsOnTicket()).isEmpty();
     }
 
@@ -357,7 +359,7 @@ class ChangeStatusTest {
                         .with(csrf()))
                 .andExpect(status().isBadRequest());
 
-        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.NEW);
+        assertThat(reload(ticket).getStatus()).isEqualTo(TicketStatus.NEW);
     }
 
     @Test
@@ -367,7 +369,7 @@ class ChangeStatusTest {
 
         closeTicket(null, "message", AgentTicketController.STATUS_CHANGED_MESSAGE);
 
-        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.CLOSED);
+        assertThat(reload(ticket).getStatus()).isEqualTo(TicketStatus.CLOSED);
         assertThat(commentsOnTicket()).isEmpty();
     }
 

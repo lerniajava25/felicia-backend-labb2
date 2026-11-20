@@ -1,7 +1,6 @@
 package se.backend.labb2.helpdesk.ticket;
 
 import jakarta.validation.Valid;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -11,6 +10,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import se.backend.labb2.helpdesk.common.FlashFeedback;
 import se.backend.labb2.helpdesk.security.CurrentUser;
 
 @Controller
@@ -72,12 +72,10 @@ public class TicketController {
             model.addAttribute("ticket", ticketService.details(id, current));
             return "tickets/detail";
         }
-        try {
-            ticketService.addComment(id, form, current);
-        } catch (OptimisticLockingFailureException e) {
-            // Thrown at commit when the owner's reply moves a waiting ticket while an agent
-            // changed it too; everything was rolled back. Give the text back so it isn't lost.
-            flash.addFlashAttribute("error", COMMENT_CONFLICT_MESSAGE);
+        // A conflict happens at commit when the owner's reply moves a waiting ticket while an
+        // agent changed it too; everything was rolled back. Give the text back so it isn't lost.
+        if (!FlashFeedback.attempt(() -> ticketService.addComment(id, form, current),
+                flash, null, COMMENT_CONFLICT_MESSAGE)) {
             flash.addFlashAttribute("commentForm", form);
         }
         return "redirect:/tickets/" + id;

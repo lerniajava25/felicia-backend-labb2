@@ -28,9 +28,7 @@
 
         <dl class="ticket-meta">
             <dt>Status</dt>
-            <!-- IN_PROGRESS becomes "status status-in-progress", same as the list -->
-            <dd th:with="slug=${ticket.status.name().toLowerCase().replace('_', '-')}"
-                th:class="${'status status-' + slug}"
+            <dd th:class="|status ${ticket.status.cssClass()}|"
                 th:text="${ticket.status.label()}">New</dd>
             <dt>Created by</dt>
             <dd th:text="${ticket.createdBy}">Name</dd>

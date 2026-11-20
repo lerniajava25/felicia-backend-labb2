@@ -1,5 +1,6 @@
 package se.backend.labb2.helpdesk.ticket;
 
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +56,9 @@ class TicketCommentTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private EntityManager entityManager;
+
     private User billy;
     private User pippi;
     private Ticket billysTicket;
@@ -70,6 +74,13 @@ class TicketCommentTest {
         billysTicket = ticketRepository.save(new Ticket("Billy printer jam", "Paper everywhere", billy));
         ollesTicket = ticketRepository.save(new Ticket("Olle needs a screen", "A big one", olle));
         ticketRepository.flush();
+    }
+
+    /** Writes pending changes and reads the entity back from the database. */
+    private <T> T reload(T entity) {
+        entityManager.flush();
+        entityManager.refresh(entity);
+        return entity;
     }
 
     @Test
@@ -188,7 +199,7 @@ class TicketCommentTest {
 
         comment(billy, "Here is the printer model");
 
-        assertThat(billysTicket.getStatus()).isEqualTo(TicketStatus.IN_PROGRESS);
+        assertThat(reload(billysTicket).getStatus()).isEqualTo(TicketStatus.IN_PROGRESS);
     }
 
     @Test
@@ -197,7 +208,7 @@ class TicketCommentTest {
 
         comment(pippi, "Which printer model is it?");
 
-        assertThat(billysTicket.getStatus()).isEqualTo(TicketStatus.WAITING_FOR_USER);
+        assertThat(reload(billysTicket).getStatus()).isEqualTo(TicketStatus.WAITING_FOR_USER);
         assertThat(commentRepository.findByTicketIdOrderByCreatedAtAsc(billysTicket.getId())).hasSize(1);
     }
 
@@ -207,6 +218,6 @@ class TicketCommentTest {
 
         comment(billy, "Any news?");
 
-        assertThat(billysTicket.getStatus()).isEqualTo(TicketStatus.IN_PROGRESS);
+        assertThat(reload(billysTicket).getStatus()).isEqualTo(TicketStatus.IN_PROGRESS);
     }
 }
