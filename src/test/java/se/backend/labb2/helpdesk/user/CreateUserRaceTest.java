@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 import se.backend.labb2.helpdesk.TestcontainersConfiguration;
 import se.backend.labb2.helpdesk.security.CurrentUser;
 
@@ -40,9 +41,14 @@ class CreateUserRaceTest {
     @MockitoBean
     private UserAdminService userAdminService;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @Test
+    @Transactional   // only the saved admin; the duplicate itself still comes from the mock
     void uniqueConstraintBecomesTheSameFormError() throws Exception {
-        CurrentUser admin = new CurrentUser(1L, "admin", "unused-hash", "Admin Test", Role.ADMIN, true);
+        // Must exist in the database: CurrentUserRefreshFilter logs out a user it can't find.
+        CurrentUser admin = CurrentUser.from(userRepository.save(new User("admin", "unused-hash", "Admin Test", Role.ADMIN)));
         doThrow(new DataIntegrityViolationException("duplicate key value violates unique constraint"))
                 .when(userAdminService).create(any(NewUserForm.class));
 

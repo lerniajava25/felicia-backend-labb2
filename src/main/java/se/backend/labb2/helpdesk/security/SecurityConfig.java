@@ -8,6 +8,11 @@ import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.security.web.context.DelegatingSecurityContextRepository;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 
 import static org.springframework.security.config.Customizer.withDefaults;
 
@@ -16,8 +21,17 @@ import static org.springframework.security.config.Customizer.withDefaults;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http,
+                                                   DbUserDetailsService userDetailsService,
+                                                   SecurityContextRepository securityContextRepository) throws Exception {
         http
+                // The same repository is used for loading the login from the session and by
+                // CurrentUserRefreshFilter for saving a refreshed one.
+                .securityContext(context -> context.securityContextRepository(securityContextRepository))
+                // Before AuthorizationFilter, so the URL rules already see the user's current
+                // role, and a disabled user is logged out before any rule lets them through.
+                .addFilterBefore(new CurrentUserRefreshFilter(userDetailsService, securityContextRepository),
+                        AuthorizationFilter.class)
                 .authorizeHttpRequests(auth -> auth
                         // Error pages and forwards inherit the original request's check;
                         // without this a 404 inside a protected page would become a 403.
@@ -33,6 +47,15 @@ public class SecurityConfig {
                 .logout(withDefaults());
         // CSRF is on by default and stays on.
         return http.build();
+    }
+
+    // Spring's default (request attribute + HTTP session), made a bean so the chain and
+    // CurrentUserRefreshFilter share it.
+    @Bean
+    SecurityContextRepository securityContextRepository() {
+        return new DelegatingSecurityContextRepository(
+                new RequestAttributeSecurityContextRepository(),
+                new HttpSessionSecurityContextRepository());
     }
 
     // One bean, used by both the URL rules above and @PreAuthorize.

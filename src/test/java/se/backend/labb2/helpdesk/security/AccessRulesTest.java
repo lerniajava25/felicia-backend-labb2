@@ -11,8 +11,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 import se.backend.labb2.helpdesk.TestcontainersConfiguration;
 import se.backend.labb2.helpdesk.user.Role;
+import se.backend.labb2.helpdesk.user.User;
+import se.backend.labb2.helpdesk.user.UserRepository;
 
 import java.net.URI;
 
@@ -34,6 +37,9 @@ class AccessRulesTest {
 
     @Autowired
     private AgentOnlyService agentOnlyService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Test
     void anonymousIsRedirectedToLogin() throws Exception {
@@ -68,12 +74,14 @@ class AccessRulesTest {
     }
 
     @Test
+    @Transactional   // the saved admin is rolled back afterwards
     void adminInheritsAgentAccess() throws Exception {
-        // The page now renders the nav, which shows displayName, so the principal must be
-        // a CurrentUser (as in the real app). Id 99 isn't in the database: the list is just empty.
-        CurrentUser admin = new CurrentUser(99L, "admin", "unused-hash", "Admin Test", Role.ADMIN, true);
+        // The page renders the nav, which shows displayName, so the principal must be a
+        // CurrentUser (as in the real app). It must also exist in the database:
+        // CurrentUserRefreshFilter logs out a user it can't find.
+        User saved = userRepository.save(new User("admin", "unused-hash", "Admin Test", Role.ADMIN));
 
-        mockMvc.perform(get("/agent/tickets").with(user(admin)))
+        mockMvc.perform(get("/agent/tickets").with(user(CurrentUser.from(saved))))
                 .andExpect(status().isOk());
     }
 

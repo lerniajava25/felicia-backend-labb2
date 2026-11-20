@@ -138,7 +138,8 @@ class LoginTest {
 
     @Test
     void navForAgentShowsOnlyAgentRoleAndAgentLinks() throws Exception {
-        CurrentUser agent = new CurrentUser(99L, "agent", "unused-hash", "Agent Test", Role.AGENT, true);
+        // Saved, not made up: CurrentUserRefreshFilter logs out a user it can't find.
+        CurrentUser agent = CurrentUser.from(userRepository.save(new User("agent", "unused-hash", "Agent Test", Role.AGENT)));
 
         mockMvc.perform(get("/").with(user(agent)))
                 .andExpect(status().isOk())

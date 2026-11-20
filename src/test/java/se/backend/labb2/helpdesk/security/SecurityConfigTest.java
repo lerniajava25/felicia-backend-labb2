@@ -6,8 +6,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 import se.backend.labb2.helpdesk.TestcontainersConfiguration;
 import se.backend.labb2.helpdesk.user.Role;
+import se.backend.labb2.helpdesk.user.User;
+import se.backend.labb2.helpdesk.user.UserRepository;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -25,6 +28,9 @@ class SecurityConfigTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @Test
     void stylesheetLoadsWhenLoggedOut() throws Exception {
         mockMvc.perform(get("/css/app.css"))
@@ -40,11 +46,13 @@ class SecurityConfigTest {
     }
 
     @Test
+    @Transactional   // the saved user is rolled back afterwards
     void homeUsesOwnStylesheetAndNoCdn() throws Exception {
-        // The nav shows displayName, so the principal must be a CurrentUser (as in the real app).
-        CurrentUser testUser = new CurrentUser(1L, "test", "unused-hash", "Test User", Role.USER, true);
+        // The nav shows displayName, so the principal must be a CurrentUser (as in the real app),
+        // and one that exists: CurrentUserRefreshFilter logs out a user it can't find.
+        User saved = userRepository.save(new User("test", "unused-hash", "Test User", Role.USER));
 
-        mockMvc.perform(get("/").with(user(testUser)))
+        mockMvc.perform(get("/").with(user(CurrentUser.from(saved))))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("href=\"/css/app.css\"")))
                 .andExpect(content().string(not(containsString("cdn."))));

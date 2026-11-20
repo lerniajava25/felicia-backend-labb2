@@ -8,15 +8,18 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 import se.backend.labb2.helpdesk.TestcontainersConfiguration;
+import se.backend.labb2.helpdesk.common.RuleViolationException;
 import se.backend.labb2.helpdesk.security.CurrentUser;
 import se.backend.labb2.helpdesk.ticket.Ticket;
 import se.backend.labb2.helpdesk.ticket.TicketRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -47,6 +50,9 @@ class AdminEditUserTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private UserAdminService userAdminService;
 
     private User admin;
     private User boss;
@@ -165,24 +171,34 @@ class AdminEditUserTest {
     }
 
     @Test
-    void lastEnabledAdminCannotBeDemoted() throws Exception {
-        // The logged-in admin's own account was disabled meanwhile (they are still logged
-        // in, see the session note), so boss is the only enabled admin left.
+    @WithMockUser(roles = "ADMIN")   // passes the service's @PreAuthorize
+    void lastEnabledAdminCannotBeDemoted() {
+        // The acting admin's own account was disabled meanwhile, so boss is the only enabled
+        // admin left. Over HTTP that admin is now logged out first (CurrentUserRefreshFilter),
+        // so the service is called directly: the rule stays as a second line of defence.
         admin.setEnabled(false);
         userRepository.flush();
+        CurrentUser staleAdmin = CurrentUser.from(admin);
 
-        mockMvc.perform(save(admin, boss, Role.USER, true, boss.getVersion()))
-                .andExpect(redirectedUrl("/admin/users/" + boss.getId() + "/edit"))
-                .andExpect(flash().attribute("error", UserAdminService.LAST_ADMIN_MESSAGE));
+        assertThatThrownBy(() -> userAdminService.update(boss.getId(), form(Role.USER, true, boss.getVersion()), staleAdmin))
+                .isInstanceOf(RuleViolationException.class)
+                .hasMessage(UserAdminService.LAST_ADMIN_MESSAGE);
         assertThat(boss.getRole()).isEqualTo(Role.ADMIN);
         assertThat(boss.getEnabled()).isTrue();
 
         // With a second enabled admin the same change is fine.
         admin.setEnabled(true);
         userRepository.flush();
-        mockMvc.perform(save(admin, boss, Role.USER, true, boss.getVersion()))
-                .andExpect(redirectedUrl("/admin/users"));
+        userAdminService.update(boss.getId(), form(Role.USER, true, boss.getVersion()), CurrentUser.from(admin));
         assertThat(boss.getRole()).isEqualTo(Role.USER);
+    }
+
+    private static EditUserForm form(Role role, boolean enabled, Long version) {
+        EditUserForm form = new EditUserForm();
+        form.setRole(role);
+        form.setEnabled(enabled);
+        form.setVersion(version);
+        return form;
     }
 
     @Test
