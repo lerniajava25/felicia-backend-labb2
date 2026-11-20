@@ -99,3 +99,33 @@ running). The tests do not need `.env`:
 ```bash
 ./mvnw test
 ```
+
+## Design decisions
+
+**Structure.** Packages by feature (`ticket`, `user`, `security`, `common`). Requests go
+controller → service → repository; controllers only handle HTTP, and every rule about who
+may do what lives in the services.
+
+**Patterns.**
+- *Repository* (Spring Data JPA) for all database access.
+- *Form objects* (`NewTicketForm`, `EditUserForm` …) hold only the fields a user may send,
+  so extra request parameters can't change status, owner or role (mass assignment).
+- *View records* (`TicketRow`, `TicketDetails` …) are built in the service; templates
+  never see entities (`open-in-view=false`).
+- *Filter chain*: Spring Security's filters plus our own `CurrentUserRefreshFilter`.
+
+**Security.**
+- Deny by default: a URL without a rule in `SecurityConfig` is refused.
+- Role hierarchy ADMIN > AGENT > USER, checked both on URLs and with `@PreAuthorize`.
+- Another user's ticket gives **404, not 403**, so ticket ids can't be probed.
+- Passwords hashed with bcrypt; one generic login error; failed logins are logged
+  without the password; CSRF on for every form; `th:text` only.
+
+**Concurrency.**
+- A version field (optimistic locking) on assign, status change and user edits: an
+  outdated page changes nothing and shows a message.
+- A database lock on the last-admin check, so two admins can't demote each other at once.
+- A unique constraint on usernames, which wins even if two admins create the same user.
+
+**Sessions.** `CurrentUserRefreshFilter` reloads the logged-in user on every request, so a
+role change or a disabled account takes effect immediately. Cost: one extra query per request.
