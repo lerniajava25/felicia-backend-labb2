@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('New user · Helpdesk')}"></head>
+<body>
+<div th:replace="~{fragments/nav :: nav}"></div>
+
+<main>
+    <h1>New user</h1>
+
+    <!-- th:action adds the hidden CSRF token. th:object binds the fields to NewUserForm. -->
+    <form th:action="@{/admin/users}" th:object="${form}" method="post" class="card form-card">
+        <div class="field">
+            <label for="username">Username</label>
+            <!-- Stored trimmed and in lowercase, the same way login looks it up. -->
+            <input type="text" th:field="*{username}" maxlength="50" required autocomplete="off"
+                   th:aria-invalid="${#fields.hasErrors('username')} ? 'true'"
+                   th:aria-describedby="${#fields.hasErrors('username')} ? 'username-error'">
+            <p id="username-error" class="field-error"
+               th:if="${#fields.hasErrors('username')}" th:errors="*{username}">Error</p>
+        </div>
+        <div class="field">
+            <label for="displayName">Display name</label>
+            <input type="text" th:field="*{displayName}" maxlength="100" required
+                   th:aria-invalid="${#fields.hasErrors('displayName')} ? 'true'"
+                   th:aria-describedby="${#fields.hasErrors('displayName')} ? 'displayName-error'">
+            <p id="displayName-error" class="field-error"
+               th:if="${#fields.hasErrors('displayName')}" th:errors="*{displayName}">Error</p>
+        </div>
+        <div class="field">
+            <label for="role">Role</label>
+            <select th:field="*{role}" required
+                    th:aria-invalid="${#fields.hasErrors('role')} ? 'true'"
+                    th:aria-describedby="${#fields.hasErrors('role')} ? 'role-error'">
+                <option value="">Choose a role</option>
+                <option th:each="r : ${roles}" th:value="${r}" th:text="${r}">USER</option>
+            </select>
+            <p id="role-error" class="field-error"
+               th:if="${#fields.hasErrors('role')}" th:errors="*{role}">Error</p>
+        </div>
+        <div class="field">
+            <label for="password">Password</label>
+            <!-- No th:field on purpose: after an error it would fill in the typed value from
+                 the binding result. A plain name can never send it back to the browser. -->
+            <input type="password" id="password" name="password" required autocomplete="new-password"
+                   th:aria-invalid="${#fields.hasErrors('password')} ? 'true'"
+                   th:aria-describedby="${#fields.hasErrors('password')} ? 'password-error'">
+            <p id="password-error" class="field-error"
+               th:if="${#fields.hasErrors('password')}" th:errors="*{password}">Error</p>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Create user</button>
+            <a th:href="@{/admin/users}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

@@ -9,6 +9,7 @@
     <a sec:authorize="hasRole('AGENT')" th:href="@{/agent/tickets}">All tickets</a>
     <a sec:authorize="hasRole('AGENT')" th:href="@{/agent/tickets/mine}">Assigned to me</a>
     <a sec:authorize="isAuthenticated()" th:href="@{/tickets/new}">New ticket</a>
+    <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin/users}">Manage users</a>
     <!-- Name and role share one element, so only a normal space separates them
          (the nav's flex gap applies between nav items, not inside one). -->
     <span sec:authorize="isAuthenticated()" class="nav-user">

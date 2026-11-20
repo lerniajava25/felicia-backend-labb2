@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Users · Helpdesk')}"></head>
+<body>
+<div th:replace="~{fragments/nav :: nav}"></div>
+
+<main>
+    <h1>Users</h1>
+
+    <!-- table-wrap scrolls the table sideways on narrow screens instead of the page. -->
+    <div class="table-wrap">
+        <table>
+            <thead>
+            <tr>
+                <th scope="col">Username</th>
+                <th scope="col">Name</th>
+                <th scope="col">Role</th>
+                <th scope="col">Status</th>
+                <th scope="col"></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="row : ${users}">
+                <td th:text="${row.username}">billy</td>
+                <td th:text="${row.displayName}">Billy Bolinder</td>
+                <td th:text="${row.role}">USER</td>
+                <td th:text="${row.enabled} ? 'Active' : 'Disabled'">Active</td>
+                <!-- Every row says "Edit"; the aria-label tells a screen reader which user. -->
+                <td><a th:href="@{/admin/users/{id}/edit(id=${row.id})}" class="edit-link"
+                       th:aria-label="|Edit ${row.username}|">Edit</a></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- form-actions gives the same space above as under the other forms' buttons. -->
+    <div class="form-actions">
+        <a th:href="@{/admin/users/new}" class="btn btn-primary">New user</a>
+    </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(|Edit ${user.username} · Helpdesk|)}"></head>
+<body>
+<div th:replace="~{fragments/nav :: nav}"></div>
+
+<main>
+    <p><a th:href="@{/admin/users}">← Users</a></p>
+
+    <!-- Flash message after a refused save: set before the redirect, shown once. -->
+    <p th:if="${error}" class="msg msg-error" role="alert" th:text="${error}">Error</p>
+
+    <h1 th:text="|Edit ${user.username}|">Edit billy</h1>
+
+    <!-- Username and display name can't be changed here, so they are plain text. -->
+    <dl class="ticket-meta">
+        <dt>Username</dt>
+        <dd th:text="${user.username}">billy</dd>
+        <dt>Display name</dt>
+        <dd th:text="${user.displayName}">Billy Bolinder</dd>
+    </dl>
+
+    <!-- Only a hint: the service refuses changes to your own account either way. -->
+    <p th:if="${isSelf}" class="msg msg-info" role="status">This is your own account. Another admin has to change it.</p>
+
+    <!-- th:action adds the hidden CSRF token. The version lets the server notice if another
+         admin changed this user after the page was loaded. -->
+    <form th:action="@{/admin/users/{id}(id=${user.id})}" th:object="${form}" method="post" class="card form-card">
+        <input type="hidden" th:field="*{version}">
+        <div class="field">
+            <label for="role">Role</label>
+            <select th:field="*{role}">
+                <option th:each="r : ${roles}" th:value="${r}" th:text="${r}">USER</option>
+            </select>
+        </div>
+        <div class="field">
+            <!-- th:field adds a hidden "_enabled" marker, so an unticked box is sent as false. -->
+            <label class="checkbox-label"><input type="checkbox" th:field="*{enabled}"> Enabled (can log in)</label>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <a th:href="@{/admin/users}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</main>
+</body>
+</html>

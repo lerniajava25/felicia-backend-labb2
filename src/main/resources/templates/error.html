@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Error · Helpdesk')}"></head>
+<body>
+<div th:replace="~{fragments/nav :: nav}"></div>
+
+<main>
+    <!-- Spring Boot's fallback: used for every status that has no page of its own under
+         error/. It has to live here (view name "error"), not in error/.
+         Only the status code, which Spring Boot puts in the model; no path or error details. -->
+    <h1>Something went wrong</h1>
+    <p><small th:text="|Error ${status}|">Error code</small></p>
+    <p><a th:href="@{/}">Back to the start page</a></p>
+</main>
+</body>
+</html>

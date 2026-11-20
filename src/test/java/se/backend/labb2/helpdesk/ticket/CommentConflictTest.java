@@ -8,9 +8,12 @@ import org.springframework.context.annotation.Import;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 import se.backend.labb2.helpdesk.TestcontainersConfiguration;
 import se.backend.labb2.helpdesk.security.CurrentUser;
 import se.backend.labb2.helpdesk.user.Role;
+import se.backend.labb2.helpdesk.user.User;
+import se.backend.labb2.helpdesk.user.UserRepository;
 
 import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.is;
@@ -39,9 +42,14 @@ class CommentConflictTest {
     @MockitoBean
     private TicketService ticketService;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @Test
+    @Transactional   // only the saved owner; the conflict itself still comes from the mock
     void conflictKeepsTheReplyAndExplains() throws Exception {
-        CurrentUser owner = new CurrentUser(1L, "billy", "unused-hash", "Billy Test", Role.USER, true);
+        // Must exist in the database: CurrentUserRefreshFilter logs out a user it can't find.
+        CurrentUser owner = CurrentUser.from(userRepository.save(new User("billy", "unused-hash", "Billy Test", Role.USER)));
         doThrow(new ObjectOptimisticLockingFailureException(Ticket.class, 7L))
                 .when(ticketService).addComment(eq(7L), any(CommentForm.class), any(CurrentUser.class));
 

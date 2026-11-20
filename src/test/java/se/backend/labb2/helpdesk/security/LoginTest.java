@@ -45,6 +45,7 @@ class LoginTest {
     private static final String NEW_TICKET_LINK = "href=\"/tickets/new\"";
     private static final String ASSIGNED_LINK = "href=\"/agent/tickets/mine\"";
     private static final String ALL_TICKETS_LINK = "href=\"/agent/tickets\"";
+    private static final String USERS_LINK = "href=\"/admin/users\"";
 
     @Autowired
     private MockMvc mockMvc;
@@ -131,12 +132,14 @@ class LoginTest {
                 .andExpect(content().string(not(containsString("(agent)"))))
                 .andExpect(content().string(not(containsString("(admin)"))))
                 .andExpect(content().string(not(containsString(ASSIGNED_LINK))))
-                .andExpect(content().string(not(containsString(ALL_TICKETS_LINK))));
+                .andExpect(content().string(not(containsString(ALL_TICKETS_LINK))))
+                .andExpect(content().string(not(containsString(USERS_LINK))));
     }
 
     @Test
     void navForAgentShowsOnlyAgentRoleAndAgentLinks() throws Exception {
-        CurrentUser agent = new CurrentUser(99L, "agent", "unused-hash", "Agent Test", Role.AGENT, true);
+        // Saved, not made up: CurrentUserRefreshFilter logs out a user it can't find.
+        CurrentUser agent = CurrentUser.from(userRepository.save(new User("agent", "unused-hash", "Agent Test", Role.AGENT)));
 
         mockMvc.perform(get("/").with(user(agent)))
                 .andExpect(status().isOk())
@@ -145,7 +148,9 @@ class LoginTest {
                         ALL_TICKETS_LINK, ASSIGNED_LINK, NEW_TICKET_LINK)))
                 .andExpect(content().string(not(containsString("(admin)"))))
                 .andExpect(content().string(not(containsString("(user)"))))
-                .andExpect(content().string(not(containsString(MY_TICKETS_LINK))));
+                .andExpect(content().string(not(containsString(MY_TICKETS_LINK))))
+                // Users is admin-only: the hierarchy gives ADMIN the AGENT role, not the other way round.
+                .andExpect(content().string(not(containsString(USERS_LINK))));
     }
 
     @Test
@@ -155,7 +160,8 @@ class LoginTest {
                 .andExpect(content().string(allOf(
                         containsString("(admin)"),
                         containsString(ASSIGNED_LINK),
-                        containsString(ALL_TICKETS_LINK))))
+                        containsString(ALL_TICKETS_LINK),
+                        containsString(USERS_LINK + ">Manage users</a>"))))
                 .andExpect(content().string(not(containsString("(agent)"))))
                 .andExpect(content().string(not(containsString("(user)"))))
                 .andExpect(content().string(not(containsString(MY_TICKETS_LINK))));
@@ -167,6 +173,7 @@ class LoginTest {
         mockMvc.perform(get("/login"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString(MY_TICKETS_LINK))))
-                .andExpect(content().string(not(containsString(ASSIGNED_LINK))));
+                .andExpect(content().string(not(containsString(ASSIGNED_LINK))))
+                .andExpect(content().string(not(containsString(USERS_LINK))));
     }
 }
