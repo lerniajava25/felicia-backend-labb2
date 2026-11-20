@@ -1,9 +1,13 @@
 package se.backend.labb2.helpdesk.user;
 
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import se.backend.labb2.helpdesk.common.NotFoundException;
+import se.backend.labb2.helpdesk.common.RuleViolationException;
+import se.backend.labb2.helpdesk.security.CurrentUser;
 
 import java.util.List;
 import java.util.Locale;
@@ -16,6 +20,10 @@ import java.util.Locale;
 @PreAuthorize("hasRole('ADMIN')")
 @Transactional(readOnly = true)
 public class UserAdminService {
+
+    // Shown to the admin as flash messages, so written in plain words.
+    static final String OWN_ACCOUNT_MESSAGE = "You can't change your own account here.";
+    static final String LAST_ADMIN_MESSAGE = "The last enabled admin can't be demoted or disabled.";
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -52,6 +60,42 @@ public class UserAdminService {
         // transaction rollback-only, and catching it would only turn it into an
         // UnexpectedRollbackException at commit. The controller handles it instead.
         userRepository.saveAndFlush(new User(username, hash, form.getDisplayName().trim(), form.getRole()));
+    }
+
+    /** One user for the edit page. An unknown id is a 404. */
+    public UserRow get(Long id) {
+        return userRepository.findById(id).map(UserRow::from).orElseThrow(NotFoundException::new);
+    }
+
+    /**
+     * Changes a user's role and enabled flag. Refuses an outdated version, the admin's own
+     * account, and anything that would leave no enabled admin. Either way nothing is saved.
+     */
+    @Transactional
+    public void update(Long id, EditUserForm form, CurrentUser current) {
+        User user = userRepository.findById(id).orElseThrow(NotFoundException::new);
+        // Someone changed the user after the page was loaded: change nothing (as in TicketService).
+        if (!user.getVersion().equals(form.getVersion())) {
+            throw new ObjectOptimisticLockingFailureException(User.class, id);
+        }
+        // An admin can't lock themselves out, by mistake or otherwise.
+        if (user.getId().equals(current.id())) {
+            throw new RuleViolationException(OWN_ACCOUNT_MESSAGE);
+        }
+        // Someone must always be able to manage users. Only matters when this user is an
+        // enabled admin today and would stop being one.
+        // Known limit: two admins demoting each other at the same moment can both see two
+        // enabled admins here. Closing that needs a lock on the admin rows.
+        boolean losesAdmin = user.getRole() == Role.ADMIN && Boolean.TRUE.equals(user.getEnabled())
+                && (form.getRole() != Role.ADMIN || !form.getEnabled());
+        if (losesAdmin && userRepository.countByRoleAndEnabledTrue(Role.ADMIN) <= 1) {
+            throw new RuleViolationException(LAST_ADMIN_MESSAGE);
+        }
+        user.changeRole(form.getRole());
+        user.setEnabled(form.getEnabled());
+        // No save(): the user is managed, so Hibernate writes "UPDATE ... WHERE version = ?"
+        // at commit. If another admin got there first, that update hits 0 rows and Spring
+        // throws ObjectOptimisticLockingFailureException.
     }
 
     /** Same as login (DbUserDetailsService), so a new user can sign in with what the admin typed. */
