@@ -1,7 +1,6 @@
 package se.backend.labb2.helpdesk.ticket;
 
 import jakarta.validation.Valid;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -12,7 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import se.backend.labb2.helpdesk.common.RuleViolationException;
+import se.backend.labb2.helpdesk.common.FlashFeedback;
 import se.backend.labb2.helpdesk.security.CurrentUser;
 
 /** Agent pages. Access is checked by the /agent/** URL rule and @PreAuthorize in the service. */
@@ -56,16 +55,8 @@ public class AgentTicketController {
             // The button always sends the version; only a hand-made request lacks it.
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
-        try {
-            ticketService.assignToMe(id, form.getVersion(), current);
-            flash.addFlashAttribute("message", ASSIGNED_MESSAGE);
-        } catch (OptimisticLockingFailureException e) {
-            // Covers both the version check in the service and Hibernate's check at commit.
-            flash.addFlashAttribute("error", CONFLICT_MESSAGE);
-        } catch (RuleViolationException e) {
-            // A business rule said no; its message is written for the user.
-            flash.addFlashAttribute("error", e.getMessage());
-        }
+        FlashFeedback.attempt(() -> ticketService.assignToMe(id, form.getVersion(), current),
+                flash, ASSIGNED_MESSAGE, CONFLICT_MESSAGE);
         return "redirect:/tickets/" + id;
     }
 
@@ -89,16 +80,10 @@ public class AgentTicketController {
             // The dropdown always sends a real status and the version; only a hand-made request doesn't.
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
-        try {
-            ticketService.changeStatus(id, form.getStatus(), form.getReason(), form.getVersion(), current);
-            flash.addFlashAttribute("message", STATUS_CHANGED_MESSAGE);
-        } catch (OptimisticLockingFailureException e) {
-            // Covers both the version check in the service and Hibernate's check at commit.
-            flash.addFlashAttribute("error", CONFLICT_MESSAGE);
-        } catch (RuleViolationException e) {
-            // Move not allowed, or a reason is missing; the service's message says which.
-            flash.addFlashAttribute("error", e.getMessage());
-        }
+        // A refused move (not allowed, or a reason is missing) comes back with the service's message.
+        FlashFeedback.attempt(
+                () -> ticketService.changeStatus(id, form.getStatus(), form.getReason(), form.getVersion(), current),
+                flash, STATUS_CHANGED_MESSAGE, CONFLICT_MESSAGE);
         return "redirect:/tickets/" + id;
     }
 }

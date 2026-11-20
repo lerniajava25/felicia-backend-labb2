@@ -41,25 +41,16 @@ docker compose down
 
 The development database runs in Docker and can be opened in any database tool:
 
-| Setting  | Value        |
-|----------|--------------|
-| Host     | `localhost`  |
-| Port     | `5432`       |
-| Database | `mydatabase` |
-| User     | `myuser`     |
-| Password | `secret`     |
+| Setting  | Value                                       |
+|----------|---------------------------------------------|
+| Host     | `localhost`                                 |
+| Port     | `5432`                                      |
+| Database | `mydatabase`                                |
+| User     | `myuser`                                    |
+| Password | see `POSTGRES_PASSWORD` in `compose.yaml`   |
 
-These are local development values from `compose.yaml`, not real credentials. The port is
-bound to `127.0.0.1` only, so the database can't be reached from other computers.
-
-### Tests
-
-Run the tests (Testcontainers starts its own PostgreSQL container, so Docker must be
-running). The tests do not need `.env`:
-
-```bash
-./mvnw test
-```
+These are local development values, not real credentials. The port is bound to
+`127.0.0.1` only, so the database can't be reached from other computers.
 
 ### Git hooks
 
@@ -87,15 +78,54 @@ Sign in at http://localhost:8080/login with a username from the table and the
 the "Log out" button in the nav bar.
 
 The password itself is never stored in the repository, and the database only holds
-bcrypt hashes of it.
+bcrypt hashes of it. Admins can create more accounts under "Manage users".
 
 ## Roles
 
-| Role  | May do                                                                                    |
-|-------|-------------------------------------------------------------------------------------------|
-| USER  | Create tickets, see their own tickets and their details, comment on their own tickets     |
-| AGENT | See all tickets and their details, assign a ticket to themselves, change status, comment  |
-| ADMIN | Everything an agent can do, plus create users, change roles and enable/disable users      |
+| Role  | May do | Where |
+|-------|--------|-------|
+| USER  | Create tickets, see their own tickets and their details, comment on their own tickets. A reply to a ticket that waits for them moves it back to "In progress". | "My tickets" (`/tickets`), "New ticket" (`/tickets/new`), a ticket (`/tickets/{id}`) |
+| AGENT | See all tickets and their details, assign a ticket to themselves or take it over from another agent, change status (closing a new ticket needs a reason), comment | "All tickets" (`/agent/tickets`), "Assigned to me" (`/agent/tickets/mine`), the agent tools on a ticket (`/tickets/{id}`) |
+| ADMIN | Everything an agent can do, plus create users, change roles and enable/disable users. An admin can't change their own account, and the last enabled admin can't be demoted or disabled. | Everything an agent has, plus "Manage users" (`/admin/users`, `/admin/users/new`, `/admin/users/{id}/edit`) |
 
 URL access is enforced in `SecurityConfig` (anything not listed is denied), with the role
 hierarchy ADMIN > AGENT > USER.
+
+## Tests
+
+Run the tests (Testcontainers starts its own PostgreSQL container, so Docker must be
+running). The tests do not need `.env`:
+
+```bash
+./mvnw test
+```
+
+## Design decisions
+
+**Structure.** Packages by feature (`ticket`, `user`, `security`, `common`). Requests go
+controller → service → repository; controllers only handle HTTP, and every rule about who
+may do what lives in the services.
+
+**Patterns.**
+- *Repository* (Spring Data JPA) for all database access.
+- *Form objects* (`NewTicketForm`, `EditUserForm` …) hold only the fields a user may send,
+  so extra request parameters can't change status, owner or role (mass assignment).
+- *View records* (`TicketRow`, `TicketDetails` …) are built in the service; templates
+  never see entities (`open-in-view=false`).
+- *Filter chain*: Spring Security's filters plus our own `CurrentUserRefreshFilter`.
+
+**Security.**
+- Deny by default: a URL without a rule in `SecurityConfig` is refused.
+- Role hierarchy ADMIN > AGENT > USER, checked both on URLs and with `@PreAuthorize`.
+- Another user's ticket gives **404, not 403**, so ticket ids can't be probed.
+- Passwords hashed with bcrypt; one generic login error; failed logins are logged
+  without the password; CSRF on for every form; `th:text` only.
+
+**Concurrency.**
+- A version field (optimistic locking) on assign, status change and user edits: an
+  outdated page changes nothing and shows a message.
+- A database lock on the last-admin check, so two admins can't demote each other at once.
+- A unique constraint on usernames, which wins even if two admins create the same user.
+
+**Sessions.** `CurrentUserRefreshFilter` reloads the logged-in user on every request, so a
+role change or a disabled account takes effect immediately. Cost: one extra query per request.

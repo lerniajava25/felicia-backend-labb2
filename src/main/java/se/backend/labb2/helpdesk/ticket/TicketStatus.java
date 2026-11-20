@@ -1,5 +1,7 @@
 package se.backend.labb2.helpdesk.ticket;
 
+import java.util.Locale;
+
 public enum TicketStatus {
     NEW,
     IN_PROGRESS,
@@ -16,6 +18,14 @@ public enum TicketStatus {
             case RESOLVED -> "Resolved";
             case CLOSED -> "Closed";
         };
+    }
+
+    /**
+     * CSS class for the status colours in app.css: IN_PROGRESS becomes "status-in-progress".
+     * Locale.ROOT so the result never depends on the server's language settings.
+     */
+    public String cssClass() {
+        return "status-" + name().toLowerCase(Locale.ROOT).replace('_', '-');
     }
 
     public boolean canMoveTo(TicketStatus next) {

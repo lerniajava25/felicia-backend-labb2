@@ -92,27 +92,27 @@ class AssignedBoardTest {
     }
 
     /** GETs the board as the given user and returns it from the model. */
-    private AgentBoard boardOf(User viewer) throws Exception {
+    private Board<AgentTicketRow> boardOf(User viewer) throws Exception {
         MvcResult result = mockMvc.perform(get("/agent/tickets/mine").with(user(CurrentUser.from(viewer))))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("<h1>" + AgentTicketController.ASSIGNED_HEADING + "</h1>")))
                 .andReturn();
-        return (AgentBoard) result.getModelAndView().getModel().get("board");
+        return (Board<AgentTicketRow>) result.getModelAndView().getModel().get("board");
     }
 
     /** Ticket ids per column, so a test can compare the whole board at once. */
-    private static Map<TicketStatus, List<Long>> idsByColumn(AgentBoard board) {
+    private static Map<TicketStatus, List<Long>> idsByColumn(Board<AgentTicketRow> board) {
         return board.columns().stream().collect(Collectors.toMap(
-                AgentBoardColumn::status,
+                BoardColumn::status,
                 column -> column.tickets().stream().map(AgentTicketRow::id).toList()));
     }
 
     @Test
     void agentSeesOnlyTicketsAssignedToThemInTheRightColumns() throws Exception {
-        AgentBoard board = boardOf(pippi);
+        Board<AgentTicketRow> board = boardOf(pippi);
 
         // All five columns, in TicketStatus order, empty ones included.
-        assertThat(board.columns()).extracting(AgentBoardColumn::status)
+        assertThat(board.columns()).extracting(BoardColumn::status)
                 .containsExactly(TicketStatus.values());
         assertThat(idsByColumn(board)).isEqualTo(Map.of(
                 TicketStatus.NEW, List.of(),
@@ -131,10 +131,10 @@ class AssignedBoardTest {
 
     @Test
     void adminSeesTheTicketAssignedToThem() throws Exception {
-        AgentBoard board = boardOf(admin);
+        Board<AgentTicketRow> board = boardOf(admin);
 
         assertThat(idsByColumn(board).get(TicketStatus.IN_PROGRESS)).containsExactly(adminsTicket.getId());
-        assertThat(board.columns()).flatExtracting(AgentBoardColumn::tickets).hasSize(1);
+        assertThat(board.columns()).flatExtracting(BoardColumn::tickets).hasSize(1);
     }
 
     @Test

@@ -1,5 +1,6 @@
 package se.backend.labb2.helpdesk.ticket;
 
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +49,9 @@ class AssignTicketTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private EntityManager entityManager;
+
     private User billy;
     private User pippi;
     private User tommy;
@@ -65,6 +69,13 @@ class AssignTicketTest {
         ticket = ticketRepository.saveAndFlush(new Ticket("Billy printer jam", "Paper everywhere", billy));
     }
 
+    /** Writes pending changes and reads the entity back from the database. */
+    private <T> T reload(T entity) {
+        entityManager.flush();
+        entityManager.refresh(entity);
+        return entity;
+    }
+
     @Test
     void agentAssignsNewTicket() throws Exception {
         mockMvc.perform(post("/agent/tickets/{id}/assign", ticket.getId())
@@ -74,8 +85,8 @@ class AssignTicketTest {
                 .andExpect(redirectedUrl("/tickets/" + ticket.getId()))
                 .andExpect(flash().attribute("message", AgentTicketController.ASSIGNED_MESSAGE));
 
-        assertThat(ticket.getAssignee().getId()).isEqualTo(pippi.getId());
-        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.IN_PROGRESS);
+        assertThat(reload(ticket).getAssignee().getId()).isEqualTo(pippi.getId());
+        assertThat(reload(ticket).getStatus()).isEqualTo(TicketStatus.IN_PROGRESS);
     }
 
     @Test
@@ -86,7 +97,7 @@ class AssignTicketTest {
                         .with(csrf()))
                 .andExpect(redirectedUrl("/tickets/" + ticket.getId()));
 
-        assertThat(ticket.getAssignee().getId()).isEqualTo(admin.getId());
+        assertThat(reload(ticket).getAssignee().getId()).isEqualTo(admin.getId());
     }
 
     @Test
@@ -104,8 +115,8 @@ class AssignTicketTest {
                 .andExpect(redirectedUrl("/tickets/" + ticket.getId()))
                 .andExpect(flash().attribute("error", AgentTicketController.CONFLICT_MESSAGE));
 
-        assertThat(ticket.getAssignee()).isNull();
-        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.IN_PROGRESS);
+        assertThat(reload(ticket).getAssignee()).isNull();
+        assertThat(reload(ticket).getStatus()).isEqualTo(TicketStatus.IN_PROGRESS);
 
         // The page after the redirect shows the message.
         mockMvc.perform(get("/tickets/{id}", ticket.getId())
@@ -123,8 +134,8 @@ class AssignTicketTest {
                         .with(csrf()))
                 .andExpect(status().isForbidden());
 
-        assertThat(ticket.getAssignee()).isNull();
-        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.NEW);
+        assertThat(reload(ticket).getAssignee()).isNull();
+        assertThat(reload(ticket).getStatus()).isEqualTo(TicketStatus.NEW);
     }
 
     @Test
@@ -134,8 +145,8 @@ class AssignTicketTest {
                         .with(user(CurrentUser.from(pippi))))
                 .andExpect(status().isForbidden());
 
-        assertThat(ticket.getAssignee()).isNull();
-        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.NEW);
+        assertThat(reload(ticket).getAssignee()).isNull();
+        assertThat(reload(ticket).getStatus()).isEqualTo(TicketStatus.NEW);
     }
 
     @Test
@@ -191,7 +202,7 @@ class AssignTicketTest {
                 .andExpect(redirectedUrl("/tickets/" + ticket.getId()))
                 .andExpect(flash().attribute("message", AgentTicketController.ASSIGNED_MESSAGE));
 
-        assertThat(ticket.getAssignee().getId()).isEqualTo(tommy.getId());
+        assertThat(reload(ticket).getAssignee().getId()).isEqualTo(tommy.getId());
     }
 
     @Test
@@ -206,7 +217,7 @@ class AssignTicketTest {
                 .andExpect(redirectedUrl("/tickets/" + ticket.getId()))
                 .andExpect(flash().attribute("error", "A closed ticket cannot be assigned."));
 
-        assertThat(ticket.getAssignee()).isNull();
-        assertThat(ticket.getStatus()).isEqualTo(TicketStatus.CLOSED);
+        assertThat(reload(ticket).getAssignee()).isNull();
+        assertThat(reload(ticket).getStatus()).isEqualTo(TicketStatus.CLOSED);
     }
 }

@@ -45,24 +45,11 @@ public record CurrentUser(Long id,
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
+    // The only check overridden: UserDetails' defaults already return true for "account not
+    // expired", "not locked" and "credentials not expired", which this app doesn't use.
     @Override
     public boolean isEnabled() {
         return Boolean.TRUE.equals(enabled);
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
     }
 
     // A record's default toString() prints every field; keep the hash out of logs.

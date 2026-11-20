@@ -2,7 +2,6 @@ package se.backend.labb2.helpdesk.user;
 
 import jakarta.validation.Valid;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
@@ -14,7 +13,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import se.backend.labb2.helpdesk.common.RuleViolationException;
+import se.backend.labb2.helpdesk.common.FlashFeedback;
 import se.backend.labb2.helpdesk.security.CurrentUser;
 
 /** Admin pages for users. Access is checked by the /admin/** URL rule and @PreAuthorize in the service. */
@@ -89,17 +88,11 @@ public class AdminUserController {
             // hand-made request doesn't.
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
-        try {
-            userAdminService.update(id, form, current);
+        if (FlashFeedback.attempt(() -> userAdminService.update(id, form, current), flash, null, CONFLICT_MESSAGE)) {
             return "redirect:/admin/users";
-        } catch (OptimisticLockingFailureException e) {
-            // Covers both the version check in the service and Hibernate's check at commit.
-            flash.addFlashAttribute("error", CONFLICT_MESSAGE);
-        } catch (RuleViolationException e) {
-            // A guard rule said no; its message is written for the admin.
-            flash.addFlashAttribute("error", e.getMessage());
         }
-        // Back to the form, which shows the message and the values that are really stored.
+        // Refused (a guard rule or another admin's change): back to the form, which shows the
+        // message and the values that are really stored.
         return "redirect:/admin/users/" + id + "/edit";
     }
 }

@@ -1,11 +1,22 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/layout :: head('Helpdesk')}"></head>
 <body>
 <div th:replace="~{fragments/nav :: nav}"></div>
 
 <main>
-    <h1>Helpdesk</h1>
+    <section class="home-hero">
+        <h1 class="home-title">Helpdesk</h1>
+
+        <!-- Shortcuts to the two most common pages. Which tickets "My tickets" opens depends on
+             the role; the server checks access again on that page. -->
+        <div class="form-actions">
+            <a class="btn btn-primary" th:href="@{/tickets/new}">New ticket</a>
+            <a sec:authorize="!hasRole('AGENT')" class="btn btn-secondary" th:href="@{/tickets}">My tickets</a>
+            <a sec:authorize="hasRole('AGENT')" class="btn btn-secondary" th:href="@{/agent/tickets/mine}">My tickets</a>
+        </div>
+    </section>
 </main>
 </body>
 </html>

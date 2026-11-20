@@ -1,5 +1,6 @@
 package se.backend.labb2.helpdesk.user;
 
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,6 +53,9 @@ class AdminEditUserTest {
     private PasswordEncoder passwordEncoder;
 
     @Autowired
+    private EntityManager entityManager;
+
+    @Autowired
     private UserAdminService userAdminService;
 
     private User admin;
@@ -71,6 +75,13 @@ class AdminEditUserTest {
         billy = userRepository.save(new User("billy", hash, "Billy Test", Role.USER));
         billysTicket = ticketRepository.save(new Ticket("Billy printer jam", "Paper everywhere", billy));
         userRepository.flush();
+    }
+
+    /** Writes pending changes and reads the entity back from the database. */
+    private <T> T reload(T entity) {
+        entityManager.flush();
+        entityManager.refresh(entity);
+        return entity;
     }
 
     /**
@@ -115,8 +126,7 @@ class AdminEditUserTest {
     void disabledUserCannotLogInButOldTicketsKeepTheirName() throws Exception {
         mockMvc.perform(save(admin, billy, Role.USER, false, billy.getVersion()))
                 .andExpect(redirectedUrl("/admin/users"));
-        userRepository.flush();
-        assertThat(billy.getEnabled()).isFalse();
+        assertThat(reload(billy).getEnabled()).isFalse();
 
         mockMvc.perform(formLogin("/login").user("billy").password(TEST_PASSWORD))
                 .andExpect(redirectedUrl("/login?error"))
@@ -140,7 +150,7 @@ class AdminEditUserTest {
                 .andExpect(redirectedUrl(editPage))
                 .andExpect(flash().attribute("error", UserAdminService.OWN_ACCOUNT_MESSAGE));
 
-        User stored = userRepository.findById(admin.getId()).orElseThrow();
+        User stored = reload(admin);
         assertThat(stored.getRole()).isEqualTo(Role.ADMIN);
         assertThat(stored.getEnabled()).isTrue();
     }
@@ -157,7 +167,7 @@ class AdminEditUserTest {
                 .andExpect(redirectedUrl("/admin/users/" + olle.getId() + "/edit"))
                 .andExpect(flash().attribute("error", AdminUserController.CONFLICT_MESSAGE));
 
-        assertThat(olle.getRole()).isEqualTo(Role.AGENT);   // the other admin's change, not ours
+        assertThat(reload(olle).getRole()).isEqualTo(Role.AGENT);   // the other admin's change, not ours
     }
 
     @Test
@@ -167,7 +177,7 @@ class AdminEditUserTest {
         mockMvc.perform(save(pippi, olle, Role.ADMIN, true, olle.getVersion()))
                 .andExpect(status().isForbidden());
 
-        assertThat(olle.getRole()).isEqualTo(Role.USER);
+        assertThat(reload(olle).getRole()).isEqualTo(Role.USER);
     }
 
     @Test
@@ -183,14 +193,14 @@ class AdminEditUserTest {
         assertThatThrownBy(() -> userAdminService.update(boss.getId(), form(Role.USER, true, boss.getVersion()), staleAdmin))
                 .isInstanceOf(RuleViolationException.class)
                 .hasMessage(UserAdminService.LAST_ADMIN_MESSAGE);
-        assertThat(boss.getRole()).isEqualTo(Role.ADMIN);
-        assertThat(boss.getEnabled()).isTrue();
+        assertThat(reload(boss).getRole()).isEqualTo(Role.ADMIN);
+        assertThat(reload(boss).getEnabled()).isTrue();
 
         // With a second enabled admin the same change is fine.
         admin.setEnabled(true);
         userRepository.flush();
         userAdminService.update(boss.getId(), form(Role.USER, true, boss.getVersion()), CurrentUser.from(admin));
-        assertThat(boss.getRole()).isEqualTo(Role.USER);
+        assertThat(reload(boss).getRole()).isEqualTo(Role.USER);
     }
 
     private static EditUserForm form(Role role, boolean enabled, Long version) {
@@ -210,7 +220,7 @@ class AdminEditUserTest {
                         .param("version", olle.getVersion().toString())
                         .with(user(CurrentUser.from(admin))))
                 .andExpect(status().isForbidden());
-        assertThat(olle.getRole()).isEqualTo(Role.USER);
+        assertThat(reload(olle).getRole()).isEqualTo(Role.USER);
 
         mockMvc.perform(get("/admin/users/{id}/edit", 999_999L).with(user(CurrentUser.from(admin))))
                 .andExpect(status().isNotFound());

@@ -13,8 +13,6 @@ import se.backend.labb2.helpdesk.user.UserRepository;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -65,8 +63,8 @@ public class TicketService {
      * empty columns included. Each column is newest change first. Same idea as boardFor.
      */
     @PreAuthorize("hasRole('AGENT')")
-    public AgentBoard boardOfAll() {
-        return agentBoard(listAll());
+    public Board<AgentTicketRow> boardOfAll() {
+        return Board.of(listAll(), AgentTicketRow::status);
     }
 
     /**
@@ -74,40 +72,20 @@ public class TicketService {
      * The assignee comes from the login, never from the URL.
      */
     @PreAuthorize("hasRole('AGENT')")
-    public AgentBoard assignedBoardFor(CurrentUser current) {
-        return agentBoard(ticketRepository.findByAssigneeIdOrderByLastModifiedDesc(current.id()).stream()
+    public Board<AgentTicketRow> assignedBoardFor(CurrentUser current) {
+        return Board.of(ticketRepository.findByAssigneeIdOrderByLastModifiedDesc(current.id()).stream()
                 .map(AgentTicketRow::from)
-                .toList());
-    }
-
-    /** Groups rows (newest first) into one column per status; shared by both agent boards. */
-    private static AgentBoard agentBoard(List<AgentTicketRow> rows) {
-        // groupingBy keeps the list's order inside each group, so newest first survives.
-        Map<TicketStatus, List<AgentTicketRow>> byStatus = rows.stream()
-                .collect(Collectors.groupingBy(AgentTicketRow::status));
-
-        List<AgentBoardColumn> columns = Arrays.stream(TicketStatus.values())
-                .map(status -> new AgentBoardColumn(status, status.label(), byStatus.getOrDefault(status, List.of())))
-                .toList();
-        return new AgentBoard(columns, rows.isEmpty());
+                .toList(), AgentTicketRow::status);
     }
 
     /**
      * The current user's own tickets as a board: one column per status, in TicketStatus
      * order, empty columns included. Each column is newest change first.
      */
-    public Board boardFor(CurrentUser current) {
-        List<TicketRow> rows = ticketRepository.findByCreatedByIdOrderByLastModifiedDesc(current.id()).stream()
+    public Board<TicketRow> boardFor(CurrentUser current) {
+        return Board.of(ticketRepository.findByCreatedByIdOrderByLastModifiedDesc(current.id()).stream()
                 .map(TicketRow::from)
-                .toList();
-        // groupingBy keeps the stream's order inside each group, so newest first survives.
-        Map<TicketStatus, List<TicketRow>> byStatus = rows.stream()
-                .collect(Collectors.groupingBy(TicketRow::status));
-
-        List<BoardColumn> columns = Arrays.stream(TicketStatus.values())
-                .map(status -> new BoardColumn(status, status.label(), byStatus.getOrDefault(status, List.of())))
-                .toList();
-        return new Board(columns, rows.isEmpty());
+                .toList(), TicketRow::status);
     }
 
     /**
@@ -134,11 +112,7 @@ public class TicketService {
     @Transactional
     @PreAuthorize("hasRole('AGENT')")
     public void assignToMe(Long id, Long version, CurrentUser current) {
-        Ticket ticket = loadVisible(id, current);
-        // Someone changed the ticket after the page was loaded: change nothing.
-        if (!ticket.getVersion().equals(version)) {
-            throw new ObjectOptimisticLockingFailureException(Ticket.class, id);
-        }
+        Ticket ticket = loadForChange(id, version, current);
         if (ticket.getStatus() == TicketStatus.CLOSED) {
             throw new RuleViolationException("A closed ticket cannot be assigned.");
         }
@@ -159,11 +133,7 @@ public class TicketService {
     @Transactional
     @PreAuthorize("hasRole('AGENT')")
     public void changeStatus(Long id, TicketStatus next, String reason, Long version, CurrentUser current) {
-        Ticket ticket = loadVisible(id, current);
-        // Someone changed the ticket after the page was loaded: change nothing.
-        if (!ticket.getVersion().equals(version)) {
-            throw new ObjectOptimisticLockingFailureException(Ticket.class, id);
-        }
+        Ticket ticket = loadForChange(id, version, current);
         // Checked here, not only in Ticket.changeStatus, so each refusal gets its own message.
         if (!ticket.getStatus().canMoveTo(next)) {
             throw new RuleViolationException(STATUS_NOT_ALLOWED_MESSAGE);
@@ -202,6 +172,19 @@ public class TicketService {
         // Security checks. So "is USER" is the right test here, not "is not AGENT".
         if (current.role() == Role.USER && !ticket.isCreatedBy(current.id())) {
             throw new NotFoundException();
+        }
+        return ticket;
+    }
+
+    /**
+     * loadVisible plus the version check, for every method that changes a ticket from a
+     * form. The order matters: someone else's ticket is a 404 before any version is compared.
+     */
+    private Ticket loadForChange(Long id, Long version, CurrentUser current) {
+        Ticket ticket = loadVisible(id, current);
+        // Someone changed the ticket after the page was loaded: change nothing.
+        if (!ticket.getVersion().equals(version)) {
+            throw new ObjectOptimisticLockingFailureException(Ticket.class, id);
         }
         return ticket;
     }
