@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import se.backend.labb2.helpdesk.common.MaxUtf8Bytes;
 
 import java.util.Locale;
 
@@ -30,6 +31,9 @@ public class NewUserForm {
 
     @NotBlank(message = "Password is required")
     @Size(min = 12, max = 64, message = "Password must be 12–64 characters")
+    // BCrypt only takes 72 bytes and refuses more. Letters like å, ä, ö take 2 bytes each, so
+    // 64 characters can be too many. Checked here, before the service hands it to the encoder.
+    @MaxUtf8Bytes(value = 72, message = "Password is too long: use fewer special characters")
     private String password;
 
     public String getUsername() {

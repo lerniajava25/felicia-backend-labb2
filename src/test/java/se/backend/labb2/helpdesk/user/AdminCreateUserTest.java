@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 import se.backend.labb2.helpdesk.TestcontainersConfiguration;
 import se.backend.labb2.helpdesk.security.CurrentUser;
 
+import java.nio.charset.StandardCharsets;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -110,6 +112,36 @@ class AdminCreateUserTest {
 
         assertThat(html).contains(AdminUserController.USERNAME_TAKEN_MESSAGE);
         assertThat(userRepository.count()).isEqualTo(before);
+    }
+
+    @Test
+    void passwordOverSeventyTwoBytesIsAFormErrorNotACrash() throws Exception {
+        // 37 characters (inside 12–64), but 73 bytes: "ä" takes 2 bytes in UTF-8.
+        String tooManyBytes = "ä".repeat(36) + "x";
+        assertThat(tooManyBytes).hasSize(37);
+        assertThat(tooManyBytes.getBytes(StandardCharsets.UTF_8)).hasSize(73);
+
+        String html = mockMvc.perform(createAs(admin, "umlauts", tooManyBytes))
+                .andExpect(status().isOk())
+                .andExpect(view().name("admin/new-user"))
+                .andExpect(model().attributeHasFieldErrors("form", "password"))
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(html).doesNotContain(tooManyBytes);
+        assertThat(userRepository.findByUsername("umlauts")).isEmpty();
+    }
+
+    @Test
+    void passwordOfExactlySeventyTwoBytesWorksAndCanLogIn() throws Exception {
+        String seventyTwoBytes = "ä".repeat(36);
+        assertThat(seventyTwoBytes.getBytes(StandardCharsets.UTF_8)).hasSize(72);
+
+        mockMvc.perform(createAs(admin, "umlauts", seventyTwoBytes))
+                .andExpect(redirectedUrl("/admin/users"));
+
+        mockMvc.perform(formLogin("/login").user("umlauts").password(seventyTwoBytes))
+                .andExpect(redirectedUrl("/"))
+                .andExpect(authenticated().withUsername("umlauts"));
     }
 
     @Test
